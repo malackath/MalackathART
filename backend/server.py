@@ -461,15 +461,17 @@ async def upload_pdf(file: UploadFile = File(...), _: str = Depends(require_admi
     if file.content_type != "application/pdf":
         raise HTTPException(400, "Only PDF files are accepted")
     data = await file.read()
-    if len(data) > 30 * 1024 * 1024:
-        raise HTTPException(400, "PDF too large (max 30 MB)")
+    size_mb = len(data) / (1024 * 1024)
+    logger.info(f"PDF upload received: {file.filename} ({size_mb:.2f} MB)")
+    if len(data) > 100 * 1024 * 1024:
+        raise HTTPException(400, f"PDF too large ({size_mb:.1f} MB). Max 100 MB.")
     file_id = str(uuid.uuid4())
     storage_path = f"{APP_NAME}/catalogs/{file_id}.pdf"
     try:
         result = put_object(storage_path, data, "application/pdf")
     except Exception as e:
-        logger.error(f"PDF upload failed: {e}")
-        raise HTTPException(500, "Upload failed")
+        logger.error(f"PDF storage upload failed: {e}")
+        raise HTTPException(500, f"Storage upload failed: {e}")
     await db.files.insert_one({
         "id": file_id,
         "storage_path": result["path"],
@@ -480,6 +482,7 @@ async def upload_pdf(file: UploadFile = File(...), _: str = Depends(require_admi
         "created_at": datetime.now(timezone.utc).isoformat(),
     })
     public_url = f"/api/files/{file_id}"
+    logger.info(f"PDF stored OK: {file_id} ({size_mb:.2f} MB)")
     return {
         "id": file_id,
         "url": public_url,
