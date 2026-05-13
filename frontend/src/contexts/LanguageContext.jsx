@@ -25,6 +25,7 @@ export const LanguageProvider = ({ children }) => {
   const [lang, setLang] = useState(() => localStorage.getItem("gallery_lang") || "es");
   const [overrides, setOverrides] = useState({ es: {}, en: {} });
   const [artist, setArtist] = useState(null);
+  const [styles, setStyles] = useState({});
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -41,13 +42,14 @@ export const LanguageProvider = ({ children }) => {
       .get("/artist")
       .then((r) => setArtist(r.data))
       .catch(() => {});
+    api
+      .get("/text-styles")
+      .then((r) => setStyles(r.data?.styles || {}))
+      .catch(() => {});
   }, [reloadKey]);
 
-  // Update browser title based on artist name
   useEffect(() => {
-    if (artist?.name) {
-      document.title = artist.name;
-    }
+    if (artist?.name) document.title = artist.name;
   }, [artist?.name]);
 
   const toggle = () => setLang((prev) => (prev === "es" ? "en" : "es"));
@@ -61,11 +63,24 @@ export const LanguageProvider = ({ children }) => {
     return obj[field] || "";
   };
 
+  const isHidden = (path) => styles?.[path]?.hidden === true;
   const siteName = artist?.name || "";
 
   return (
     <LanguageContext.Provider
-      value={{ lang, setLang, toggle, t, pick, reloadTexts, overrides, artist, siteName }}
+      value={{
+        lang,
+        setLang,
+        toggle,
+        t,
+        pick,
+        reloadTexts,
+        overrides,
+        artist,
+        siteName,
+        styles,
+        isHidden,
+      }}
     >
       {children}
     </LanguageContext.Provider>

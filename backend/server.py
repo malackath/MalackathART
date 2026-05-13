@@ -190,6 +190,12 @@ class SiteTexts(BaseModel):
 class Settings(BaseModel):
     catalog_pdf_url: Optional[str] = None
     catalog_pdf_filename: Optional[str] = None
+    featured_seconds: int = 5
+    recent_works_count: int = 4
+
+
+class TextStyles(BaseModel):
+    styles: Dict[str, Dict] = Field(default_factory=dict)
 
 
 # ---------------- Auth helpers ----------------
@@ -450,6 +456,21 @@ async def get_settings():
 @api.put("/settings", response_model=Settings)
 async def update_settings(data: Settings, _: str = Depends(require_admin)):
     await db.settings.update_one(
+        {"_id": "main"}, {"$set": data.model_dump()}, upsert=True
+    )
+    return data
+
+
+# ---------------- Text Styles ----------------
+@api.get("/text-styles", response_model=TextStyles)
+async def get_text_styles():
+    doc = await db.text_styles.find_one({"_id": "main"}, {"_id": 0})
+    return TextStyles(**(doc or {}))
+
+
+@api.put("/text-styles", response_model=TextStyles)
+async def update_text_styles(data: TextStyles, _: str = Depends(require_admin)):
+    await db.text_styles.update_one(
         {"_id": "main"}, {"$set": data.model_dump()}, upsert=True
     )
     return data
