@@ -39,6 +39,13 @@
 - Seed data: 4 artworks, 3 exhibitions, artist info
 - Backend 16/16 tests + frontend critical flows tested
 
+## Implemented (2026-02-13 — iteration 2)
+- **Image uploads**: `POST /api/uploads/image` (admin-only, validates MIME, max 10MB) → Emergent object storage. `GET /api/files/{id}` serves bytes. `db.files` collection with soft-delete flag. Storage key initialized once on startup.
+- **Multi-image gallery per artwork**: new `images: List[str]` field; WorkDetail shows clickable thumbnails that swap the main image.
+- **Drag & drop reorder** of artworks in admin (`PUT /api/artworks/reorder` batch endpoint), native HTML5 drag with visual hover state.
+- **Auto-cleanup of seeds**: artworks/exhibitions seeded on first boot are marked `is_seed=True`; first real admin creation deletes them. One-time migration upgrades legacy seed rows.
+- Backend 25/26 tests pass (1 known carry-over: Stripe stub-key status polling)
+
 ## Backlog / Next Tasks
 **P1**
 - Image upload to object storage for admin (currently uses URLs)
