@@ -76,8 +76,12 @@ export default function Home() {
             to={`/works/${s.id}`}
             data-testid={`hero-slide-${i}`}
             aria-hidden={i !== slideIdx}
-            className="absolute inset-0 z-0 block transition-opacity duration-[1200ms] ease-in-out"
-            style={{ opacity: i === slideIdx ? 1 : 0, pointerEvents: i === slideIdx ? "auto" : "none" }}
+            className="absolute inset-0 z-0 block"
+            style={{
+              opacity: i === slideIdx ? 1 : 0,
+              transition: "opacity 2200ms cubic-bezier(0.4, 0, 0.2, 1)",
+              pointerEvents: i === slideIdx ? "auto" : "none",
+            }}
           >
             <img
               src={s.image_url}
