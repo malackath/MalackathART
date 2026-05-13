@@ -11,12 +11,16 @@ export default function WorkDetail() {
   const [art, setArt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(false);
+  const [activeImage, setActiveImage] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     api
       .get(`/artworks/${id}`)
-      .then((r) => setArt(r.data))
+      .then((r) => {
+        setArt(r.data);
+        setActiveImage(r.data.image_url);
+      })
       .catch(() => setArt(null))
       .finally(() => setLoading(false));
   }, [id]);
@@ -76,12 +80,30 @@ export default function WorkDetail() {
         <div className="lg:col-span-8 fade-up">
           <div className="bg-white/[0.03] flex items-center justify-center p-4 md:p-10">
             <img
-              src={art.image_url}
+              src={activeImage || art.image_url}
               alt={pick(art, "title")}
               data-testid="detail-image"
               className="max-h-[75vh] w-auto max-w-full object-contain"
             />
           </div>
+          {Array.isArray(art.images) && art.images.length > 0 && (
+            <div className="mt-6 flex gap-3 flex-wrap" data-testid="detail-gallery">
+              {[art.image_url, ...art.images].map((url, i) => (
+                <button
+                  key={`${url}-${i}`}
+                  onClick={() => setActiveImage(url)}
+                  data-testid={`detail-thumb-${i}`}
+                  className={`w-20 h-20 md:w-24 md:h-24 overflow-hidden bg-white/5 border transition-all ${
+                    (activeImage || art.image_url) === url
+                      ? "border-white"
+                      : "border-transparent opacity-60 hover:opacity-100"
+                  }`}
+                >
+                  <img src={url} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <aside className="lg:col-span-4 lg:sticky lg:top-28 lg:self-start fade-up-d1">

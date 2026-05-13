@@ -1,10 +1,11 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, status
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, status, UploadFile, File, Header, Query, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import requests
 from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional, Dict
@@ -32,6 +33,45 @@ JWT_EXP_HOURS = 24 * 7
 ADMIN_EMAIL = os.environ["ADMIN_EMAIL"]
 ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
 STRIPE_API_KEY = os.environ["STRIPE_API_KEY"]
+EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY")
+STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
+APP_NAME = "elena-cruz-gallery"
+storage_key: Optional[str] = None
+
+
+def init_storage():
+    global storage_key
+    if storage_key:
+        return storage_key
+    if not EMERGENT_LLM_KEY:
+        raise RuntimeError("EMERGENT_LLM_KEY not configured")
+    resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_LLM_KEY}, timeout=30)
+    resp.raise_for_status()
+    storage_key = resp.json()["storage_key"]
+    return storage_key
+
+
+def put_object(path: str, data: bytes, content_type: str) -> dict:
+    key = init_storage()
+    resp = requests.put(
+        f"{STORAGE_URL}/objects/{path}",
+        headers={"X-Storage-Key": key, "Content-Type": content_type},
+        data=data,
+        timeout=120,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+def get_object(path: str) -> tuple:
+    key = init_storage()
+    resp = requests.get(
+        f"{STORAGE_URL}/objects/{path}",
+        headers={"X-Storage-Key": key},
+        timeout=60,
+    )
+    resp.raise_for_status()
+    return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
 
 app = FastAPI()
 api = APIRouter(prefix="/api")
@@ -62,12 +102,14 @@ class Artwork(BaseModel):
     description: str
     description_en: Optional[str] = None
     image_url: str
+    images: List[str] = Field(default_factory=list)
     price: float
     currency: str = "usd"
     dimensions: Optional[str] = None
     available: bool = True
     featured: bool = False
     order: int = 0
+    is_seed: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -80,12 +122,18 @@ class ArtworkInput(BaseModel):
     description: str
     description_en: Optional[str] = None
     image_url: str
+    images: List[str] = Field(default_factory=list)
     price: float
     currency: str = "usd"
     dimensions: Optional[str] = None
     available: bool = True
     featured: bool = False
     order: int = 0
+
+
+class ReorderItem(BaseModel):
+    id: str
+    order: int
 
 
 class Exhibition(BaseModel):
@@ -100,6 +148,7 @@ class Exhibition(BaseModel):
     description: Optional[str] = None
     description_en: Optional[str] = None
     image_url: Optional[str] = None
+    is_seed: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -284,21 +333,34 @@ async def seed_data():
     count = await db.artworks.count_documents({})
     if count == 0:
         for a in SAMPLE_ARTWORKS:
-            obj = Artwork(**a)
+            obj = Artwork(**a, is_seed=True)
             doc = obj.model_dump()
             doc["created_at"] = doc["created_at"].isoformat()
             await db.artworks.insert_one(doc)
         logger.info("Seeded artworks")
+    else:
+        # One-time migration: mark legacy seeded artworks (matching sample titles) as is_seed
+        sample_titles = [a["title"] for a in SAMPLE_ARTWORKS]
+        await db.artworks.update_many(
+            {"title": {"$in": sample_titles}, "is_seed": {"$ne": True}},
+            {"$set": {"is_seed": True}},
+        )
 
     # Exhibitions
     exh_count = await db.exhibitions.count_documents({})
     if exh_count == 0:
         for e in SAMPLE_EXHIBITIONS:
-            obj = Exhibition(**e)
+            obj = Exhibition(**e, is_seed=True)
             doc = obj.model_dump()
             doc["created_at"] = doc["created_at"].isoformat()
             await db.exhibitions.insert_one(doc)
         logger.info("Seeded exhibitions")
+    else:
+        sample_exh_titles = [e["title"] for e in SAMPLE_EXHIBITIONS]
+        await db.exhibitions.update_many(
+            {"title": {"$in": sample_exh_titles}, "is_seed": {"$ne": True}},
+            {"$set": {"is_seed": True}},
+        )
 
     # Artist info
     info = await db.artist_info.find_one({"_id": "main"}, {"_id": 0})
@@ -310,6 +372,11 @@ async def seed_data():
 @app.on_event("startup")
 async def startup():
     await seed_data()
+    try:
+        init_storage()
+        logger.info("Storage initialized")
+    except Exception as e:
+        logger.warning(f"Storage init failed (uploads will not work): {e}")
 
 
 # ---------------- Auth Routes ----------------
@@ -368,11 +435,22 @@ async def get_artwork(artwork_id: str):
 
 @api.post("/artworks", response_model=Artwork)
 async def create_artwork(data: ArtworkInput, _: str = Depends(require_admin)):
-    obj = Artwork(**data.model_dump())
+    # Auto-cleanup: when admin creates first real artwork, remove all seeded samples
+    real_count = await db.artworks.count_documents({"is_seed": {"$ne": True}})
+    if real_count == 0:
+        await db.artworks.delete_many({"is_seed": True})
+    obj = Artwork(**data.model_dump(), is_seed=False)
     doc = obj.model_dump()
     doc["created_at"] = doc["created_at"].isoformat()
     await db.artworks.insert_one(doc)
     return obj
+
+
+@api.put("/artworks/reorder")
+async def reorder_artworks(items: List[ReorderItem], _: str = Depends(require_admin)):
+    for it in items:
+        await db.artworks.update_one({"id": it.id}, {"$set": {"order": it.order}})
+    return {"ok": True, "updated": len(items)}
 
 
 @api.put("/artworks/{artwork_id}", response_model=Artwork)
@@ -406,7 +484,10 @@ async def list_exhibitions():
 
 @api.post("/exhibitions", response_model=Exhibition)
 async def create_exhibition(data: ExhibitionInput, _: str = Depends(require_admin)):
-    obj = Exhibition(**data.model_dump())
+    real_count = await db.exhibitions.count_documents({"is_seed": {"$ne": True}})
+    if real_count == 0:
+        await db.exhibitions.delete_many({"is_seed": True})
+    obj = Exhibition(**data.model_dump(), is_seed=False)
     doc = obj.model_dump()
     doc["created_at"] = doc["created_at"].isoformat()
     await db.exhibitions.insert_one(doc)
@@ -554,6 +635,57 @@ async def stripe_webhook(request: Request):
 @api.get("/")
 async def root():
     return {"message": "Gallery API"}
+
+
+# ---------------- Uploads ----------------
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
+@api.post("/uploads/image")
+async def upload_image(file: UploadFile = File(...), _: str = Depends(require_admin)):
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(400, f"Unsupported file type: {file.content_type}")
+    data = await file.read()
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise HTTPException(400, "File too large (max 10 MB)")
+    ext = (file.filename.rsplit(".", 1)[-1] if "." in (file.filename or "") else "bin").lower()
+    file_id = str(uuid.uuid4())
+    storage_path = f"{APP_NAME}/artworks/{file_id}.{ext}"
+    try:
+        result = put_object(storage_path, data, file.content_type)
+    except Exception as e:
+        logger.error(f"Upload failed: {e}")
+        raise HTTPException(500, "Upload failed")
+    await db.files.insert_one({
+        "id": file_id,
+        "storage_path": result["path"],
+        "original_filename": file.filename,
+        "content_type": file.content_type,
+        "size": result.get("size", len(data)),
+        "is_deleted": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    # Public URL through our own /api/files/{id} proxy
+    public_url = f"/api/files/{file_id}"
+    return {"id": file_id, "url": public_url, "size": result.get("size", len(data))}
+
+
+@api.get("/files/{file_id}")
+async def download_file(file_id: str):
+    record = await db.files.find_one({"id": file_id, "is_deleted": False}, {"_id": 0})
+    if not record:
+        raise HTTPException(404, "File not found")
+    try:
+        data, content_type = get_object(record["storage_path"])
+    except Exception as e:
+        logger.error(f"Download failed: {e}")
+        raise HTTPException(500, "Download failed")
+    return Response(
+        content=data,
+        media_type=record.get("content_type", content_type),
+        headers={"Cache-Control": "public, max-age=31536000, immutable"},
+    )
 
 
 app.include_router(api)

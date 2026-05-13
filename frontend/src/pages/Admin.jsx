@@ -1,15 +1,179 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Navigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useLang } from "../contexts/LanguageContext";
 import { api } from "../lib/api";
 import { toast } from "sonner";
-import { Plus, Edit2, Trash2, X } from "lucide-react";
+import { Plus, Edit2, Trash2, X, Upload, GripVertical } from "lucide-react";
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
+const ImageField = ({ value, onChange }) => {
+  const inputRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = async (file) => {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Imagen demasiado grande (máx 10 MB)");
+      return;
+    }
+    const fd = new FormData();
+    fd.append("file", file);
+    setUploading(true);
+    try {
+      const res = await api.post("/uploads/image", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      // Backend returns /api/files/{id}; build full URL for public use
+      const fullUrl = res.data.url.startsWith("http")
+        ? res.data.url
+        : `${BACKEND_URL}${res.data.url}`;
+      onChange(fullUrl);
+      toast.success("Imagen subida");
+    } catch (e) {
+      toast.error("Error al subir: " + (e.response?.data?.detail || e.message));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const fullPreview = value
+    ? value.startsWith("http") || value.startsWith("/")
+      ? value.startsWith("/api")
+        ? `${BACKEND_URL}${value}`
+        : value
+      : value
+    : "";
+
+  return (
+    <div data-testid="image-field">
+      <div className="flex items-start gap-4">
+        <div className="w-24 h-24 bg-white/5 flex items-center justify-center overflow-hidden flex-shrink-0">
+          {fullPreview ? (
+            <img src={fullPreview} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-white/30 text-xs">sin imagen</span>
+          )}
+        </div>
+        <div className="flex-1 space-y-2">
+          <input
+            type="text"
+            placeholder="URL o sube un archivo"
+            value={value || ""}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full bg-transparent border border-white/20 focus:border-white outline-none p-3 text-white text-sm"
+          />
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleFile(e.target.files?.[0])}
+            className="hidden"
+            data-testid="image-upload-input"
+          />
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            data-testid="image-upload-btn"
+            className="inline-flex items-center gap-2 px-4 py-2 border border-white/30 text-xs tracking-[0.2em] uppercase hover:bg-white hover:text-black transition-colors disabled:opacity-50"
+          >
+            <Upload size={14} />
+            {uploading ? "Subiendo..." : "Subir imagen"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const resolveUrl = (v) =>
+  v && (v.startsWith("/api") ? `${BACKEND_URL}${v}` : v);
+
+const MultiImageField = ({ value, onChange }) => {
+  const inputRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const list = Array.isArray(value) ? value : [];
+
+  const handleFiles = async (files) => {
+    if (!files?.length) return;
+    setUploading(true);
+    const uploaded = [];
+    for (const file of files) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`${file.name}: demasiado grande`);
+        continue;
+      }
+      const fd = new FormData();
+      fd.append("file", file);
+      try {
+        const res = await api.post("/uploads/image", fd, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        const fullUrl = res.data.url.startsWith("http")
+          ? res.data.url
+          : `${BACKEND_URL}${res.data.url}`;
+        uploaded.push(fullUrl);
+      } catch (e) {
+        toast.error(`Error: ${file.name}`);
+      }
+    }
+    if (uploaded.length) {
+      onChange([...list, ...uploaded]);
+      toast.success(`${uploaded.length} imagen(es) subida(s)`);
+    }
+    setUploading(false);
+  };
+
+  const removeAt = (i) => {
+    const next = list.filter((_, idx) => idx !== i);
+    onChange(next);
+  };
+
+  return (
+    <div data-testid="multi-image-field">
+      <div className="flex flex-wrap gap-3 mb-3">
+        {list.map((url, i) => (
+          <div key={i} className="relative w-20 h-20 bg-white/5">
+            <img src={resolveUrl(url)} alt="" className="w-full h-full object-cover" />
+            <button
+              type="button"
+              onClick={() => removeAt(i)}
+              className="absolute -top-2 -right-2 w-6 h-6 bg-black border border-white/40 rounded-full flex items-center justify-center text-white hover:bg-red-600"
+              data-testid={`gallery-remove-${i}`}
+            >
+              <X size={12} />
+            </button>
+          </div>
+        ))}
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={(e) => handleFiles(Array.from(e.target.files || []))}
+        className="hidden"
+      />
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={uploading}
+        data-testid="gallery-upload-btn"
+        className="inline-flex items-center gap-2 px-4 py-2 border border-white/30 text-xs tracking-[0.2em] uppercase hover:bg-white hover:text-black transition-colors disabled:opacity-50"
+      >
+        <Upload size={14} />
+        {uploading ? "Subiendo..." : "Añadir imágenes"}
+      </button>
+    </div>
+  );
+};
 
 const emptyArtwork = {
   title: "", title_en: "", year: new Date().getFullYear(),
   technique: "", technique_en: "", description: "", description_en: "",
-  image_url: "", price: 0, currency: "usd", dimensions: "",
+  image_url: "", images: [], price: 0, currency: "usd", dimensions: "",
   available: true, featured: false, order: 0,
 };
 const emptyExh = {
@@ -25,6 +189,9 @@ export default function Admin() {
   const [exhibitions, setExhibitions] = useState([]);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(null);
+  // Drag and drop reordering for artworks (must be declared before any early return)
+  const [dragIdx, setDragIdx] = useState(null);
+  const [hoverIdx, setHoverIdx] = useState(null);
 
   const load = () => {
     api.get("/artworks").then((r) => setArtworks(r.data));
@@ -45,6 +212,8 @@ export default function Admin() {
     const copy = { ...item };
     delete copy.id;
     delete copy.created_at;
+    delete copy.is_seed;
+    if (tab === "artworks" && !Array.isArray(copy.images)) copy.images = [];
     setForm(copy);
   };
   const closeForm = () => { setEditing(null); setForm(null); };
@@ -72,6 +241,32 @@ export default function Admin() {
     await api.delete(`${endpoint}/${id}`);
     toast.success("Deleted");
     load();
+  };
+
+  // Drag and drop reordering for artworks
+  const handleDrop = async () => {
+    if (dragIdx === null || hoverIdx === null || dragIdx === hoverIdx) {
+      setDragIdx(null);
+      setHoverIdx(null);
+      return;
+    }
+    const next = [...artworks];
+    const [moved] = next.splice(dragIdx, 1);
+    next.splice(hoverIdx, 0, moved);
+    const reordered = next.map((a, i) => ({ ...a, order: i }));
+    setArtworks(reordered);
+    setDragIdx(null);
+    setHoverIdx(null);
+    try {
+      await api.put(
+        "/artworks/reorder",
+        reordered.map((a) => ({ id: a.id, order: a.order }))
+      );
+      toast.success("Orden actualizado");
+    } catch (e) {
+      toast.error("Error reordenando");
+      load();
+    }
   };
 
   return (
@@ -120,7 +315,8 @@ export default function Admin() {
           <table className="w-full text-sm">
             <thead className="text-left text-xs tracking-[0.2em] uppercase text-white/40 border-b border-white/10">
               <tr>
-                <th className="py-3 w-20">Img</th>
+                <th className="py-3 w-8"></th>
+                <th className="w-20">Img</th>
                 <th>Title</th>
                 <th>Year</th>
                 <th>Technique</th>
@@ -130,9 +326,23 @@ export default function Admin() {
               </tr>
             </thead>
             <tbody>
-              {artworks.map((a) => (
-                <tr key={a.id} data-testid={`admin-artwork-${a.id}`} className="border-b border-white/5">
-                  <td className="py-3"><img src={a.image_url} alt="" className="w-12 h-12 object-cover" /></td>
+              {artworks.map((a, idx) => (
+                <tr
+                  key={a.id}
+                  data-testid={`admin-artwork-${a.id}`}
+                  draggable
+                  onDragStart={() => setDragIdx(idx)}
+                  onDragOver={(e) => { e.preventDefault(); setHoverIdx(idx); }}
+                  onDragEnd={handleDrop}
+                  onDrop={handleDrop}
+                  className={`border-b border-white/5 transition-colors ${
+                    hoverIdx === idx && dragIdx !== null && dragIdx !== idx ? "bg-white/10" : ""
+                  } ${dragIdx === idx ? "opacity-40" : ""}`}
+                >
+                  <td className="py-3 cursor-grab text-white/30 hover:text-white/70" data-testid={`drag-handle-${a.id}`}>
+                    <GripVertical size={16} />
+                  </td>
+                  <td><img src={resolveUrl(a.image_url)} alt="" className="w-12 h-12 object-cover" /></td>
                   <td>{a.title}</td>
                   <td className="text-white/60">{a.year}</td>
                   <td className="text-white/60">{a.technique}</td>
@@ -184,9 +394,12 @@ export default function Admin() {
             <h2 className="font-display text-2xl mb-8">{editing === "new" ? t.admin.add : t.admin.edit}</h2>
             <div className="grid grid-cols-2 gap-4">
               {Object.entries(form).map(([key, val]) => {
+                const isArray = Array.isArray(val);
                 const isBool = typeof val === "boolean";
                 const isNum = typeof val === "number";
                 const isLong = key.startsWith("description");
+                const isImage = key === "image_url";
+                const isGallery = key === "images";
                 if (isBool) {
                   return (
                     <label key={key} className="flex items-center gap-3 text-sm text-white/70 col-span-2 md:col-span-1">
@@ -200,14 +413,26 @@ export default function Admin() {
                   );
                 }
                 return (
-                  <div key={key} className={isLong ? "col-span-2" : "col-span-2 md:col-span-1"}>
-                    <label className="text-xs tracking-[0.2em] uppercase text-white/40 block mb-2">{key}</label>
+                  <div key={key} className={isLong || isImage || isGallery ? "col-span-2" : "col-span-2 md:col-span-1"}>
+                    <label className="text-xs tracking-[0.2em] uppercase text-white/40 block mb-2">
+                      {isGallery ? "images (galería adicional)" : key}
+                    </label>
                     {isLong ? (
                       <textarea
                         rows={3}
                         value={val || ""}
                         onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                         className="w-full bg-transparent border border-white/20 focus:border-white outline-none p-3 text-white"
+                      />
+                    ) : isImage ? (
+                      <ImageField
+                        value={val || ""}
+                        onChange={(url) => setForm({ ...form, [key]: url })}
+                      />
+                    ) : isGallery ? (
+                      <MultiImageField
+                        value={isArray ? val : []}
+                        onChange={(arr) => setForm({ ...form, [key]: arr })}
                       />
                     ) : (
                       <input

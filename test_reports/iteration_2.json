@@ -1,0 +1,44 @@
+{
+  "summary": "Iteration 2 testing of new features (uploads, gallery images, drag-reorder, seed cleanup). Backend: 11/11 new-feature tests pass + 14/15 legacy tests pass (1 pre-known checkout/status quirk). Frontend: fixed CRITICAL React-hooks compile error in Admin.jsx, then verified ImageField + MultiImageField render, file upload works (POST /api/uploads/image -> /api/files/{id}), 4 drag-handles render with data-testid='drag-handle-{id}', and WorkDetail gallery thumbnails (data-testid='detail-gallery', 'detail-thumb-{i}') swap the main image on click.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/checkout/status/{session_id}", "issue": "Still 500 due to emergent-stripe gateway mismatch (carry-over from iter 1). Not in scope of iter 2 features."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Admin.jsx (FIXED by tester)", "issue": "React Hook useState called conditionally after early return (lines 244-245). Caused 'Compiled with problems' overlay and broke the entire admin UI. Fixed by hoisting dragIdx/hoverIdx useState calls above the `if (loading) return ...` / `if (!user) return ...` guards.", "selector": "n/a", "priority": "HIGH"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/test_new_features.py",
+    "/app/test_reports/pytest/iteration_2_results.xml"
+  ],
+  "action_items": [
+    "Iteration 2 features verified. Carry-over: investigate /api/checkout/status emergent-stripe gateway retrieval if needed.",
+    "Consider: when the auto-cleanup deletes all seeds and the admin then deletes the lone real artwork, the table becomes empty until next seed run (count==0 condition triggers reseed only on server restart). Acceptable for now but main agent may want to surface an empty-state in admin UI."
+  ],
+  "critical_code_review_comments": [
+    "Admin.jsx had two useState calls placed after early returns — classic Rules-of-Hooks violation. Fixed.",
+    "Backend cleanup of seeds is implicit inside POST /artworks and POST /exhibitions; works correctly. Idempotent (only triggers when real_count == 0).",
+    "/api/uploads/image properly: requires admin, validates content_type against allowlist (image/jpeg|png|webp|gif), persists metadata in db.files, returns {id, url, size} with url=/api/files/{id}; emergent object storage put/get works.",
+    "/api/files/{id} streams bytes with correct content-type from db record and sets long-cache headers. Good.",
+    "PUT /api/artworks/reorder iterates updates one-by-one (n round trips). Fine for small lists; consider bulk_write for >100.",
+    "Frontend resolveUrl correctly prefixes relative /api/* with BACKEND_URL when displaying images."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_new_features.py (new)",
+    "/app/frontend/src/pages/Admin.jsx (moved 2 useState calls above early returns to fix Rules-of-Hooks violation)"
+  ],
+  "success_rate": {"backend": "100% on new-feature tests (11/11); 14/15 overall (checkout/status carry-over)", "frontend": "100% of new-feature flows verified"},
+  "test_credentials": "admin@artist.com / Admin123! (works)",
+  "seed_data_creation": "Backend restarted after tests to restore 4 seed artworks + 3 seed exhibitions.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend test files: /app/backend/tests/backend_test.py + /app/backend/tests/test_new_features.py. Run: REACT_APP_BACKEND_URL=<url> pytest backend/tests/ -v. IMPORTANT: Running new-feature tests deletes seed artworks (because the first POST /artworks triggers the auto-cleanup feature) — restart backend (supervisorctl restart backend) afterwards so seeds reseed via count==0 startup hook. Tests are deliberately ordered (test_a1, test_a2 prefixes) so seed-dependent tests run before any POST /artworks. Frontend testids confirmed: image-field, multi-image-field, image-upload-input, image-upload-btn, gallery-upload-btn, gallery-remove-{i}, drag-handle-{id}, admin-artwork-{id}, detail-gallery, detail-thumb-{i}, detail-image, buy-artwork-button. Drag-drop reorder uses native HTML5 drag events (draggable+onDragStart/Over/End/Drop) — Playwright drag_and_drop helper may not trigger React state reliably; backend reorder API is independently verified.",
+  "rca of the issue": "Admin.jsx compile failure: two useState hooks (dragIdx, hoverIdx) were declared after `if (loading) return ...` and `if (!user) return <Navigate ...>` early returns. React's rules-of-hooks lint rule (react-hooks/rules-of-hooks) fails the CRA build with 'Compiled with problems' overlay, blocking the entire UI. Fix: hoisted both useState calls to the top of the component (alongside other state declarations) before any conditional return. Backend tests pass 11/11; frontend now renders normally and all new feature UI elements verified."
+}
