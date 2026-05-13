@@ -79,7 +79,7 @@ export default function Home() {
             className="absolute inset-0 z-0 block"
             style={{
               opacity: i === slideIdx ? 1 : 0,
-              transition: "opacity 2200ms cubic-bezier(0.4, 0, 0.2, 1)",
+              transition: "opacity 3500ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
               pointerEvents: i === slideIdx ? "auto" : "none",
             }}
           >
