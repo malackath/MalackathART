@@ -46,6 +46,14 @@
 - **Auto-cleanup of seeds**: artworks/exhibitions seeded on first boot are marked `is_seed=True`; first real admin creation deletes them. One-time migration upgrades legacy seed rows.
 - Backend 25/26 tests pass (1 known carry-over: Stripe stub-key status polling)
 
+## Implemented (2026-02-13 — iteration 3)
+- **Editable site texts**: `GET/PUT /api/site-texts` with admin-only PUT. ES/EN overrides stored as nested dict on `db.site_texts._id='main'`. Frontend `LanguageContext` deep-merges overrides over `translations.js` defaults. Admin tab "Textos" with section navigator and per-language inputs for every editable string. Reset button per field clears overrides.
+- **PDF catalog**: `POST /api/uploads/pdf` (admin, 30MB max) → object storage. `GET/PUT /api/settings` stores `catalog_pdf_url` + `catalog_pdf_filename`. Admin tab "Ajustes" handles upload/replace/remove.
+- **Global catalog download button**: `<CatalogButton/>` floating bottom-right, dark yellow `#B8860B`, fetches `/api/settings` and renders only when PDF is set. Hidden on `/admin/*` routes via Layout guard. `target="_blank" download` attributes set.
+- **Home hero redesign**: featured artwork now serves as full-screen background (88-92 vh) with `brightness-0.32 saturate-0.3` filter; on hover transitions to brighter/colorful (1.5s ease-out). Hero text overlays with drop-shadow. Scroll indicator + featured caption in corners.
+- Bolder typography globally (`font-black` headings, `font-bold` H2, `font-medium` nav/labels).
+- Backend 35+ tests pass (only carry-over: Stripe stub-key status polling).
+
 ## Backlog / Next Tasks
 **P1**
 - Image upload to object storage for admin (currently uses URLs)
