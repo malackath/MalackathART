@@ -38,9 +38,9 @@ export default function Home() {
             <img
               src={featured.image_url}
               alt={pick(featured, "title")}
-              className="w-full h-full object-cover scale-110 group-hover/hero:scale-100 transition-all duration-[1500ms] ease-out filter brightness-[0.32] saturate-[0.3] group-hover/hero:brightness-[0.65] group-hover/hero:saturate-100"
+              className="w-full h-full object-cover scale-105 group-hover/hero:scale-100 transition-all duration-[1500ms] ease-out filter brightness-[0.6] saturate-100 group-hover/hero:brightness-100"
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black/80 group-hover/hero:from-black/40 group-hover/hero:via-black/20 group-hover/hero:to-black/60 transition-all duration-[1500ms]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/15 to-black/55 group-hover/hero:from-black/20 group-hover/hero:via-transparent group-hover/hero:to-black/30 transition-all duration-[1500ms]" />
           </Link>
         )}
 
@@ -49,13 +49,13 @@ export default function Home() {
             <p className="text-xs tracking-[0.3em] uppercase text-white/70 mb-8 font-medium">
               {t.home.eyebrow}
             </p>
-            <h1 className="font-display font-black tracking-tighter leading-[0.85] text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.6)]">
+            <h1 className="font-display font-black tracking-tighter leading-[0.85] text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-white drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)] [text-shadow:0_2px_8px_rgba(0,0,0,0.85)]">
               {t.home.hero1}<br />
               <span className="italic font-bold">{t.home.hero2}</span><br />
               {t.home.hero3}
             </h1>
             <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
-              <p className="max-w-lg text-base md:text-lg leading-relaxed text-white/85 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
+              <p className="max-w-lg text-base md:text-lg leading-relaxed text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] [text-shadow:0_1px_4px_rgba(0,0,0,0.85)]">
                 {t.home.lead}
               </p>
               <div className="md:text-right">

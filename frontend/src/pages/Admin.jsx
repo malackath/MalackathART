@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Plus, Edit2, Trash2, X, Upload, GripVertical } from "lucide-react";
 import TextsEditor from "./admin/TextsEditor";
 import SettingsEditor from "./admin/SettingsEditor";
+import ArtistEditor from "./admin/ArtistEditor";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -185,7 +186,7 @@ const emptyExh = {
 
 export default function Admin() {
   const { user, logout, loading } = useAuth();
-  const { t } = useLang();
+  const { t, siteName } = useLang();
   const [tab, setTab] = useState("artworks");
   const [artworks, setArtworks] = useState([]);
   const [exhibitions, setExhibitions] = useState([]);
@@ -275,7 +276,7 @@ export default function Admin() {
     <div data-testid="admin-page" className="min-h-screen bg-[#050505] text-white">
       <header className="border-b border-white/10 px-8 py-5 flex items-center justify-between">
         <div className="flex items-center gap-8">
-          <Link to="/" className="font-display tracking-tighter text-lg">ELENA CRUZ</Link>
+          <Link to="/" className="font-display font-black tracking-tighter text-lg uppercase">{siteName || "·"}</Link>
           <span className="text-xs tracking-[0.2em] uppercase text-white/40">{t.admin.dashboard}</span>
         </div>
         <div className="flex items-center gap-6">
@@ -295,6 +296,7 @@ export default function Admin() {
           {[
             { id: "artworks", label: t.admin.artworks },
             { id: "exhibitions", label: t.admin.exhibitions },
+            { id: "artist", label: "Artista" },
             { id: "texts", label: "Textos" },
             { id: "settings", label: "Ajustes" },
           ].map((tk) => (
@@ -324,6 +326,8 @@ export default function Admin() {
           <TextsEditor />
         ) : tab === "settings" ? (
           <SettingsEditor />
+        ) : tab === "artist" ? (
+          <ArtistEditor />
         ) : tab === "artworks" ? (
           <table className="w-full text-sm">
             <thead className="text-left text-xs tracking-[0.2em] uppercase text-white/40 border-b border-white/10">

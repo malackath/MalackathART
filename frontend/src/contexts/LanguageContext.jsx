@@ -4,7 +4,6 @@ import { api } from "../lib/api";
 
 const LanguageContext = createContext();
 
-// Deep merge override into base (only overrides non-empty string values)
 const deepMerge = (base, override) => {
   if (!override || typeof override !== "object") return base;
   const result = { ...base };
@@ -25,6 +24,7 @@ const deepMerge = (base, override) => {
 export const LanguageProvider = ({ children }) => {
   const [lang, setLang] = useState(() => localStorage.getItem("gallery_lang") || "es");
   const [overrides, setOverrides] = useState({ es: {}, en: {} });
+  const [artist, setArtist] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -37,7 +37,18 @@ export const LanguageProvider = ({ children }) => {
       .get("/site-texts")
       .then((r) => setOverrides(r.data || { es: {}, en: {} }))
       .catch(() => {});
+    api
+      .get("/artist")
+      .then((r) => setArtist(r.data))
+      .catch(() => {});
   }, [reloadKey]);
+
+  // Update browser title based on artist name
+  useEffect(() => {
+    if (artist?.name) {
+      document.title = artist.name;
+    }
+  }, [artist?.name]);
 
   const toggle = () => setLang((prev) => (prev === "es" ? "en" : "es"));
   const reloadTexts = () => setReloadKey((k) => k + 1);
@@ -50,8 +61,12 @@ export const LanguageProvider = ({ children }) => {
     return obj[field] || "";
   };
 
+  const siteName = artist?.name || "";
+
   return (
-    <LanguageContext.Provider value={{ lang, setLang, toggle, t, pick, reloadTexts, overrides }}>
+    <LanguageContext.Provider
+      value={{ lang, setLang, toggle, t, pick, reloadTexts, overrides, artist, siteName }}
+    >
       {children}
     </LanguageContext.Provider>
   );

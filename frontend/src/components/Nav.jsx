@@ -4,7 +4,7 @@ import { useLang } from "../contexts/LanguageContext";
 import { Menu, X } from "lucide-react";
 
 export const Nav = () => {
-  const { t, lang, toggle } = useLang();
+  const { t, lang, toggle, siteName } = useLang();
   const [open, setOpen] = useState(false);
   const location = useLocation();
 
@@ -27,9 +27,9 @@ export const Nav = () => {
         <Link
           to="/"
           data-testid="nav-logo"
-          className="font-display font-black tracking-tighter text-lg md:text-xl hover:text-white/70 transition-colors"
+          className="font-display font-black tracking-tighter text-lg md:text-xl uppercase hover:text-white/70 transition-colors"
         >
-          ELENA CRUZ
+          {siteName || "·"}
         </Link>
 
         <nav className="hidden md:flex items-center gap-10">

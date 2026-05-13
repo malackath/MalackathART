@@ -324,12 +324,12 @@ SAMPLE_EXHIBITIONS = [
 ]
 
 DEFAULT_ARTIST = {
-    "name": "Elena Cruz",
-    "bio_es": "Elena Cruz (1985) es una pintora contemporánea cuya práctica explora la relación entre el color como emoción y la geometría como pensamiento. Su obra ha sido exhibida en galerías de Europa y América Latina y forma parte de colecciones privadas y públicas. Vive y trabaja entre Madrid y Buenos Aires.",
-    "bio_en": "Elena Cruz (1985) is a contemporary painter whose practice explores the relationship between color as emotion and geometry as thought. Her work has been exhibited in galleries across Europe and Latin America and is part of private and public collections. She lives and works between Madrid and Buenos Aires.",
+    "name": "Bernardo Arnelli",
+    "bio_es": "Bernardo Arnelli es un pintor contemporáneo cuya práctica explora la relación entre el color como emoción y la geometría como pensamiento. Su obra ha sido exhibida en galerías de Europa y América Latina y forma parte de colecciones privadas y públicas.",
+    "bio_en": "Bernardo Arnelli is a contemporary painter whose practice explores the relationship between color as emotion and geometry as thought. His work has been exhibited in galleries across Europe and Latin America and is part of private and public collections.",
     "portrait_url": "https://images.unsplash.com/photo-1722252266922-d086481c3a8e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHwyfHxibGFjayUyMGFuZCUyMHdoaXRlJTIwZWRpdG9yaWFsJTIwcG9ydHJhaXQlMjBhcnRpc3QlMjBpbiUyMHN0dWRpb3xlbnwwfHx8fDE3Nzg2ODMwMjZ8MA&ixlib=rb-4.1.0&q=85",
-    "email": "studio@elenacruz.art",
-    "instagram": "@elenacruz.studio",
+    "email": "studio@bernardoarnelli.art",
+    "instagram": "@bernardoarnelli",
 }
 
 
