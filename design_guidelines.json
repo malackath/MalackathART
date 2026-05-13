@@ -1,0 +1,95 @@
+{
+  "theme": "Dark",
+  "archetype": "Archetype 4: Swiss & High-Contrast (Dark Variation)",
+  "vibe": "Sophisticated, authoritative, minimalist, editorial. Think Tate Modern, Gagosian, or David Zwirner. The UI is completely silent; the colorful artworks are the heroes.",
+  "colors": {
+    "background": "#050505",
+    "surface": "#121212",
+    "surface_glass": "rgba(5, 5, 5, 0.7)",
+    "text_primary": "#F5F5F5",
+    "text_secondary": "#888888",
+    "border": "#222222",
+    "accent_primary": "#FFFFFF",
+    "accent_hover": "#CCCCCC",
+    "danger": "#FF3B30",
+    "success": "#34C759"
+  },
+  "typography": {
+    "font_strategy": "The Swiss Brutalist (Tech/Art) - Editorial Variation",
+    "primary_font_headings": "Cabinet Grotesk, Outfit, sans-serif",
+    "secondary_font_body": "Satoshi, Manrope, sans-serif",
+    "weights": {
+      "headings": "font-light to font-medium",
+      "body": "font-light"
+    },
+    "hierarchy": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tighter leading-none",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight leading-none",
+      "h3": "text-xl sm:text-2xl tracking-tight",
+      "overline": "text-xs tracking-[0.2em] uppercase text-text_secondary",
+      "body": "text-base leading-relaxed text-text_secondary"
+    }
+  },
+  "spacing_and_layout": {
+    "strategy": "Generous Spacing & Asymmetry (Mode A: Tetris Grid). Do not center everything. Let negative space breathe.",
+    "section_padding": "py-24 md:py-32",
+    "container_max": "max-w-[1400px] mx-auto px-6 md:px-12",
+    "grid_bento": "grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16"
+  },
+  "surface_strategies": {
+    "header": "Crystal Glass: backdrop-blur-xl bg-[#050505]/70 with 1px border-b border-white/10.",
+    "cards_gallery": "Cardless. Edge-to-edge images or solid minimalist borders (border-b only). Use hover state to reveal text/opacity.",
+    "buttons": "Flat, sharp edges. border border-white/20 bg-transparent text-white hover:bg-white hover:text-black transition-colors duration-300."
+  },
+  "components_instructions": {
+    "navigation": "Fixed top nav (z-50) with logo, links, EN/ES toggle, and Cart/Login. Must be visible on desktop (no hamburger on md+).",
+    "hero_section": "Massive typography, pure black background, single featured artwork on one side (asymmetric) with scrolling marquee or very subtle parallax.",
+    "gallery_grid": "Asymmetric masonry or bento grid. Images are the ONLY color on the page. Use 'group' and 'group-hover' to show details on hover.",
+    "artwork_detail_page": "Sticky layout: Massive image on the left (col-span-8) max-h-[80vh] object-contain, sticky details on the right (col-span-4) with Title, Year, Technique, Description, and Buy button (Stripe checkout).",
+    "exhibitions_list": "Minimalist list view. Huge typography. border-t border-white/10 between rows.",
+    "admin_panel": "Dense, utilitarian. Table views for managing artworks and exhibitions. Use Shadcn UI (dark mode).",
+    "language_switcher": "Simple text toggle 'EN / ES' in the header. Use standard i18n approach."
+  },
+  "motion_and_interactions": {
+    "general": "Smooth and slow. No bouncy animations. The vibe is a silent museum.",
+    "scrolling": "Lenis smooth scroll is mandatory for the premium gallery feel.",
+    "hover_effects": "Images scale up very slightly (scale-105) inside a hidden overflow container. Text fades in.",
+    "page_transition": "Fade in/out (opacity 0 to 1, duration 0.5s)."
+  },
+  "testing": {
+    "requirements": "All interactive elements MUST have data-testid. Examples: data-testid='buy-artwork-button', data-testid='lang-toggle', data-testid='admin-login'."
+  },
+  "media_urls": {
+    "artist_portrait": {
+      "description": "Black and white editorial portrait of the artist for the bio section.",
+      "url": "https://images.unsplash.com/photo-1722252266922-d086481c3a8e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHwyfHxibGFjayUyMGFuZCUyMHdoaXRlJTIwZWRpdG9yaWFsJTIwcG9ydHJhaXQlMjBhcnRpc3QlMjBpbiUyMHN0dWRpb3xlbnwwfHx8fDE3Nzg2ODMwMjZ8MA&ixlib=rb-4.1.0&q=85"
+    },
+    "exhibition_space": {
+      "description": "Minimalist modern art exhibition space for the upcoming exhibitions section.",
+      "url": "https://images.unsplash.com/photo-1767706508416-414285b8bead?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzF8MHwxfHNlYXJjaHwyfHxtaW5pbWFsaXN0JTIwbW9kZXJuJTIwYXJ0JTIwZXhoaWJpdGlvbiUyMHNwYWNlfGVufDB8fHx8MTc3ODY4MzAyNnww&ixlib=rb-4.1.0&q=85"
+    },
+    "artworks": [
+      {
+        "description": "Vibrant abstract colorful painting 1 (Hero / Featured)",
+        "url": "https://images.unsplash.com/photo-1772882971868-1bb960ebf150?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzh8MHwxfHNlYXJjaHw0fHx2aWJyYW50JTIwYWJzdHJhY3QlMjBjb2xvcmZ1bCUyMGNvbnRlbXBvcmFyeSUyMGFydCUyMHBhaW50aW5nfGVufDB8fHx8MTc3ODY4MzA0Nnww&ixlib=rb-4.1.0&q=85"
+      },
+      {
+        "description": "Abstract geometric bright colors 2",
+        "url": "https://images.unsplash.com/photo-1772056380652-e0cf143f350a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzB8MHwxfHNlYXJjaHwzfHxjb250ZW1wb3JhcnklMjBhcnQlMjBnZW9tZXRyaWMlMjBicmlnaHQlMjBjb2xvcnN8ZW58MHx8fHwxNzc4NjgzMDQ2fDA&ixlib=rb-4.1.0&q=85"
+      },
+      {
+        "description": "Vibrant abstract colorful painting 3",
+        "url": "https://images.unsplash.com/photo-1768572019427-2ce961caaece?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzh8MHwxfHNlYXJjaHwyfHx2aWJyYW50JTIwYWJzdHJhY3QlMjBjb2xvcmZ1bCUyMGNvbnRlbXBvcmFyeSUyMGFydCUyMHBhaW50aW5nfGVufDB8fHx8MTc3ODY4MzA0Nnww&ixlib=rb-4.1.0&q=85"
+      },
+      {
+        "description": "Abstract geometric bright colors 4",
+        "url": "https://images.unsplash.com/photo-1772056378814-6311c337e28d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzB8MHwxfHNlYXJjaHwyfHxjb250ZW1wb3JhcnklMjBhcnQlMjBnZW9tZXRyaWMlMjBicmlnaHQlMjBjb2xvcnN8ZW58MHx8fHwxNzc4NjgzMDQ2fDA&ixlib=rb-4.1.0&q=85"
+      }
+    ]
+  },
+  "libraries": {
+    "icons": "iconoir-react (Thin/Light variants)",
+    "animations": "framer-motion",
+    "scrolling": "lenis"
+  }
+}
