@@ -20,34 +20,74 @@ export default function Exhibitions() {
   return (
     <div data-testid="exhibitions-page" className="max-w-[1400px] mx-auto px-6 md:px-12 py-16 md:py-24">
       <header className="mb-16 md:mb-24 fade-up">
-        <p className="text-xs tracking-[0.3em] uppercase font-medium text-white/50 mb-6">2026 — 2027</p>
-        <h1 className="font-display font-black tracking-tighter text-5xl md:text-7xl leading-none">{t.exhibitions.title}</h1>
-        <p className="mt-6 max-w-xl text-white/60">{t.exhibitions.subtitle}</p>
+        <p
+          className="text-xs tracking-[0.3em] uppercase font-medium mb-6"
+          style={{ color: "var(--app-text-dim)" }}
+        >
+          2026 — 2027
+        </p>
+        <h1
+          className="font-display font-black tracking-tighter text-5xl md:text-7xl leading-none"
+          style={{ color: "var(--app-text)" }}
+        >
+          {t.exhibitions.title}
+        </h1>
+        <p className="mt-6 max-w-xl" style={{ color: "var(--app-text-soft)" }}>
+          {t.exhibitions.subtitle}
+        </p>
       </header>
 
       {items.length === 0 ? (
-        <p className="text-white/50">{t.exhibitions.none}</p>
+        <p style={{ color: "var(--app-text-muted)" }}>{t.exhibitions.none}</p>
       ) : (
-        <div className="border-t border-white/10">
+        <div className="border-t" style={{ borderColor: "var(--app-border)" }}>
           {items.map((e) => (
             <article
               key={e.id}
               data-testid={`exh-row-${e.id}`}
-              className="border-b border-white/10 py-12 grid grid-cols-12 gap-6 items-start"
+              className="border-b py-12 grid grid-cols-12 gap-6 items-start"
+              style={{ borderColor: "var(--app-border)" }}
             >
               <div className="col-span-12 md:col-span-2">
-                <div className="text-xs tracking-[0.2em] uppercase text-white/50">{formatDate(e.start_date)}</div>
-                <div className="text-xs tracking-[0.2em] uppercase text-white/30 mt-1">→ {formatDate(e.end_date)}</div>
+                <div
+                  className="text-xs tracking-[0.2em] uppercase font-medium"
+                  style={{ color: "var(--app-text-dim)" }}
+                >
+                  {formatDate(e.start_date)}
+                </div>
+                <div
+                  className="text-xs tracking-[0.2em] uppercase mt-1"
+                  style={{ color: "var(--app-text-faint)" }}
+                >
+                  → {formatDate(e.end_date)}
+                </div>
               </div>
               <div className="col-span-12 md:col-span-7">
-                <h2 className="font-display font-black tracking-tighter text-3xl md:text-4xl leading-none">{pick(e, "title")}</h2>
+                <h2
+                  className="font-display font-black tracking-tighter text-3xl md:text-4xl leading-none"
+                  style={{ color: "var(--app-text)" }}
+                >
+                  {pick(e, "title")}
+                </h2>
                 {pick(e, "description") && (
-                  <p className="mt-4 text-sm text-white/60 max-w-xl">{pick(e, "description")}</p>
+                  <p
+                    className="mt-4 text-sm max-w-xl"
+                    style={{ color: "var(--app-text-soft)" }}
+                  >
+                    {pick(e, "description")}
+                  </p>
                 )}
               </div>
               <div className="col-span-12 md:col-span-3 text-right">
-                <div className="text-sm text-white/80">{e.venue}</div>
-                <div className="text-xs text-white/50 tracking-wide mt-1">{e.city}, {e.country}</div>
+                <div className="text-sm" style={{ color: "var(--app-text)" }}>
+                  {e.venue}
+                </div>
+                <div
+                  className="text-xs tracking-wide mt-1"
+                  style={{ color: "var(--app-text-dim)" }}
+                >
+                  {e.city}, {e.country}
+                </div>
               </div>
             </article>
           ))}

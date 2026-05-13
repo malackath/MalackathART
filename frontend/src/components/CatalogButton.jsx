@@ -37,10 +37,15 @@ export const CatalogButton = ({ compact = false }) => {
       rel="noopener noreferrer"
       data-testid="catalog-pdf-btn"
       aria-label={label}
+      style={{
+        backgroundColor: "var(--app-gold)",
+        color: "#0a0a0a",
+        boxShadow: "0 0 12px rgba(240, 180, 0, 0.4)",
+      }}
       className={
         compact
-          ? "inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F0B400] hover:bg-[#FFC83D] text-black font-bold tracking-[0.15em] uppercase text-[10px] md:text-xs transition-all duration-200 hover:scale-[1.03] shadow-[0_0_12px_rgba(240,180,0,0.45)] hover:shadow-[0_0_20px_rgba(240,180,0,0.7)]"
-          : "inline-flex items-center gap-2 px-4 py-2 bg-[#F0B400] hover:bg-[#FFC83D] text-black font-bold tracking-[0.15em] uppercase text-xs transition-all duration-200 hover:scale-[1.03] shadow-[0_0_14px_rgba(240,180,0,0.5)] hover:shadow-[0_0_22px_rgba(240,180,0,0.75)]"
+          ? "inline-flex items-center gap-1.5 px-3 py-1.5 font-bold tracking-[0.15em] uppercase text-[10px] md:text-xs transition-all duration-200 hover:scale-[1.03] hover:!bg-[var(--app-gold-hover)]"
+          : "inline-flex items-center gap-2 px-4 py-2 font-bold tracking-[0.15em] uppercase text-xs transition-all duration-200 hover:scale-[1.03] hover:!bg-[var(--app-gold-hover)]"
       }
     >
       <Download size={compact ? 12 : 14} />

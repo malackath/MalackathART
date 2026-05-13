@@ -41,22 +41,43 @@ export default function Success() {
   }, [sessionId]);
 
   return (
-    <div data-testid="success-page" className="max-w-[1400px] mx-auto px-6 md:px-12 py-32 min-h-[60vh] flex flex-col items-center justify-center text-center">
+    <div
+      data-testid="success-page"
+      className="max-w-[1400px] mx-auto px-6 md:px-12 py-32 min-h-[60vh] flex flex-col items-center justify-center text-center"
+    >
       {state.status === "processing" && (
-        <div data-testid="success-processing" className="text-white/60 font-display text-3xl">
+        <div
+          data-testid="success-processing"
+          className="font-display text-3xl"
+          style={{ color: "var(--app-text-soft)" }}
+        >
           {t.success.processing}
         </div>
       )}
       {state.status === "paid" && (
         <div data-testid="success-confirmed" className="fade-up">
-          <div className="w-16 h-16 mx-auto rounded-full border border-white flex items-center justify-center mb-8">
+          <div
+            className="w-16 h-16 mx-auto rounded-full border flex items-center justify-center mb-8"
+            style={{ color: "var(--app-text)", borderColor: "var(--app-text)" }}
+          >
             <Check size={28} />
           </div>
-          <h1 className="font-display tracking-tighter text-5xl md:text-6xl leading-none">{t.success.title}</h1>
-          <p className="mt-6 text-white/60 max-w-md mx-auto">{t.success.sub}</p>
+          <h1
+            className="font-display tracking-tighter text-5xl md:text-6xl leading-none"
+            style={{ color: "var(--app-text)" }}
+          >
+            {t.success.title}
+          </h1>
+          <p
+            className="mt-6 max-w-md mx-auto"
+            style={{ color: "var(--app-text-soft)" }}
+          >
+            {t.success.sub}
+          </p>
           <Link
             to="/"
-            className="inline-flex items-center gap-3 mt-12 px-7 py-4 border border-white/30 text-sm tracking-[0.2em] uppercase hover:bg-white hover:text-black transition-colors"
+            className="inline-flex items-center gap-3 mt-12 px-7 py-4 border text-sm tracking-[0.2em] uppercase font-medium transition-colors hover:!bg-[var(--app-invert)] hover:!text-[var(--app-invert-text)]"
+            style={{ color: "var(--app-text)", borderColor: "var(--app-border-bold)" }}
           >
             {t.success.back}
           </Link>
@@ -64,13 +85,22 @@ export default function Success() {
       )}
       {state.status === "failed" && (
         <div data-testid="success-failed">
-          <div className="w-16 h-16 mx-auto rounded-full border border-white/40 flex items-center justify-center mb-8 text-white/60">
+          <div
+            className="w-16 h-16 mx-auto rounded-full border flex items-center justify-center mb-8"
+            style={{ color: "var(--app-text-soft)", borderColor: "var(--app-border-strong)" }}
+          >
             <X size={28} />
           </div>
-          <h1 className="font-display tracking-tighter text-3xl">{t.success.failed}</h1>
+          <h1
+            className="font-display tracking-tighter text-3xl"
+            style={{ color: "var(--app-text)" }}
+          >
+            {t.success.failed}
+          </h1>
           <Link
             to="/"
-            className="inline-flex items-center gap-3 mt-10 px-7 py-4 border border-white/30 text-sm tracking-[0.2em] uppercase hover:bg-white hover:text-black transition-colors"
+            className="inline-flex items-center gap-3 mt-10 px-7 py-4 border text-sm tracking-[0.2em] uppercase font-medium transition-colors hover:!bg-[var(--app-invert)] hover:!text-[var(--app-invert-text)]"
+            style={{ color: "var(--app-text)", borderColor: "var(--app-border-bold)" }}
           >
             {t.success.back}
           </Link>

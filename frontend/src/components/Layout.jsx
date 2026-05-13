@@ -7,7 +7,10 @@ export const Layout = ({ children }) => {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith("/admin");
   return (
-    <div className="min-h-screen bg-[#050505] text-white">
+    <div
+      className={isAdmin ? "min-h-screen theme-dark" : "min-h-screen"}
+      style={{ backgroundColor: "var(--app-bg)", color: "var(--app-text)" }}
+    >
       <Nav />
       <main className={isAdmin ? "" : "pt-16 md:pt-20"}>{children}</main>
       {!isAdmin && <Footer />}

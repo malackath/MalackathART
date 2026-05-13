@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
 import { api } from "../lib/api";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
@@ -33,9 +33,7 @@ export default function WorkDetail() {
         artwork_id: art.id,
         origin_url: window.location.origin,
       });
-      if (res.data.url) {
-        window.location.href = res.data.url;
-      }
+      if (res.data.url) window.location.href = res.data.url;
     } catch (e) {
       toast.error(lang === "es" ? "Error iniciando el pago" : "Error starting payment");
       setBuying(false);
@@ -44,7 +42,11 @@ export default function WorkDetail() {
 
   if (loading) {
     return (
-      <div data-testid="detail-loading" className="max-w-[1400px] mx-auto px-6 md:px-12 py-32 text-white/50">
+      <div
+        data-testid="detail-loading"
+        className="max-w-[1400px] mx-auto px-6 md:px-12 py-32"
+        style={{ color: "var(--app-text-muted)" }}
+      >
         ···
       </div>
     );
@@ -52,7 +54,10 @@ export default function WorkDetail() {
 
   if (!art) {
     return (
-      <div className="max-w-[1400px] mx-auto px-6 md:px-12 py-32 text-white/50">
+      <div
+        className="max-w-[1400px] mx-auto px-6 md:px-12 py-32"
+        style={{ color: "var(--app-text-muted)" }}
+      >
         404
       </div>
     );
@@ -71,14 +76,18 @@ export default function WorkDetail() {
       <button
         onClick={() => navigate(-1)}
         data-testid="detail-back"
-        className="inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase text-white/60 hover:text-white mb-12"
+        className="inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase mb-12 hover:!text-[var(--app-text)]"
+        style={{ color: "var(--app-text-soft)" }}
       >
         <ArrowLeft size={14} /> {t.detail.back}
       </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
         <div className="lg:col-span-8 fade-up">
-          <div className="bg-white/[0.03] flex items-center justify-center p-4 md:p-10">
+          <div
+            className="flex items-center justify-center p-4 md:p-10"
+            style={{ backgroundColor: "var(--app-overlay-soft)" }}
+          >
             <img
               src={activeImage || art.image_url}
               alt={pick(art, "title")}
@@ -93,11 +102,15 @@ export default function WorkDetail() {
                   key={`${url}-${i}`}
                   onClick={() => setActiveImage(url)}
                   data-testid={`detail-thumb-${i}`}
-                  className={`w-20 h-20 md:w-24 md:h-24 overflow-hidden bg-white/5 border transition-all ${
-                    (activeImage || art.image_url) === url
-                      ? "border-white"
-                      : "border-transparent opacity-60 hover:opacity-100"
-                  }`}
+                  className="w-20 h-20 md:w-24 md:h-24 overflow-hidden border-2 transition-all"
+                  style={{
+                    backgroundColor: "var(--app-overlay)",
+                    borderColor:
+                      (activeImage || art.image_url) === url
+                        ? "var(--app-text)"
+                        : "transparent",
+                    opacity: (activeImage || art.image_url) === url ? 1 : 0.6,
+                  }}
                 >
                   <img src={url} alt="" className="w-full h-full object-cover" />
                 </button>
@@ -107,44 +120,67 @@ export default function WorkDetail() {
         </div>
 
         <aside className="lg:col-span-4 lg:sticky lg:top-28 lg:self-start fade-up-d1">
-          <h1 className="font-display font-black tracking-tighter text-3xl md:text-4xl leading-none">
+          <h1
+            className="font-display font-black tracking-tighter text-3xl md:text-4xl leading-none"
+            style={{ color: "var(--app-text)" }}
+          >
             {pick(art, "title")}
           </h1>
 
           <dl className="mt-10 space-y-5 text-sm">
-            <div className="flex justify-between border-b border-white/10 pb-3">
-              <dt className="text-white/40 tracking-[0.2em] uppercase text-xs">{t.detail.year}</dt>
-              <dd className="text-white">{art.year}</dd>
-            </div>
-            <div className="flex justify-between border-b border-white/10 pb-3">
-              <dt className="text-white/40 tracking-[0.2em] uppercase text-xs">{t.detail.technique}</dt>
-              <dd className="text-white text-right">{pick(art, "technique")}</dd>
-            </div>
-            {art.dimensions && (
-              <div className="flex justify-between border-b border-white/10 pb-3">
-                <dt className="text-white/40 tracking-[0.2em] uppercase text-xs">{t.detail.dimensions}</dt>
-                <dd className="text-white">{art.dimensions}</dd>
-              </div>
-            )}
-            <div className="flex justify-between border-b border-white/10 pb-3">
-              <dt className="text-white/40 tracking-[0.2em] uppercase text-xs">{t.detail.price}</dt>
-              <dd className="text-white font-display text-lg">
-                {formatPrice(art.price, art.currency)}
-              </dd>
-            </div>
+            {[
+              { l: t.detail.year, v: art.year },
+              { l: t.detail.technique, v: pick(art, "technique") },
+              { l: t.detail.dimensions, v: art.dimensions },
+              { l: t.detail.price, v: formatPrice(art.price, art.currency), isPrice: true },
+            ]
+              .filter((x) => x.v)
+              .map((x, i) => (
+                <div
+                  key={i}
+                  className="flex justify-between border-b pb-3"
+                  style={{ borderColor: "var(--app-border)" }}
+                >
+                  <dt
+                    className="tracking-[0.2em] uppercase text-xs"
+                    style={{ color: "var(--app-text-muted)" }}
+                  >
+                    {x.l}
+                  </dt>
+                  <dd
+                    className={x.isPrice ? "font-display text-lg text-right" : "text-right"}
+                    style={{ color: "var(--app-text)" }}
+                  >
+                    {x.v}
+                  </dd>
+                </div>
+              ))}
           </dl>
 
-          <p className="mt-8 text-sm leading-relaxed text-white/70">
+          <p
+            className="mt-8 text-sm leading-relaxed"
+            style={{ color: "var(--app-text-soft)" }}
+          >
             {pick(art, "description")}
           </p>
-          <p className="mt-4 text-xs text-white/40 italic">{t.detail.certificate}</p>
+          <p
+            className="mt-4 text-xs italic"
+            style={{ color: "var(--app-text-muted)" }}
+          >
+            {t.detail.certificate}
+          </p>
 
           {art.available ? (
             <button
               onClick={handleBuy}
               disabled={buying}
               data-testid="buy-artwork-button"
-              className="mt-10 w-full inline-flex items-center justify-center gap-3 px-7 py-4 border border-white text-sm tracking-[0.2em] uppercase bg-white text-black hover:bg-transparent hover:text-white transition-colors disabled:opacity-50"
+              className="mt-10 w-full inline-flex items-center justify-center gap-3 px-7 py-4 text-sm tracking-[0.2em] uppercase font-bold transition-colors disabled:opacity-50"
+              style={{
+                backgroundColor: "var(--app-invert)",
+                color: "var(--app-invert-text)",
+                border: "1px solid var(--app-invert)",
+              }}
             >
               {buying ? t.detail.buying : t.detail.buy}
               {!buying && <ArrowUpRight size={16} />}
@@ -152,7 +188,11 @@ export default function WorkDetail() {
           ) : (
             <div
               data-testid="sold-banner"
-              className="mt-10 w-full px-7 py-4 border border-white/20 text-sm tracking-[0.2em] uppercase text-white/40 text-center"
+              className="mt-10 w-full px-7 py-4 border text-sm tracking-[0.2em] uppercase text-center"
+              style={{
+                color: "var(--app-text-muted)",
+                borderColor: "var(--app-border-strong)",
+              }}
             >
               {t.detail.sold}
             </div>
