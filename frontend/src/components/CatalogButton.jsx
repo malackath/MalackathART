@@ -5,7 +5,7 @@ import { useLang } from "../contexts/LanguageContext";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
-export const CatalogButton = () => {
+export const CatalogButton = ({ compact = false }) => {
   const { lang } = useLang();
   const [pdfUrl, setPdfUrl] = useState(null);
   const [filename, setFilename] = useState("catalogo.pdf");
@@ -27,7 +27,7 @@ export const CatalogButton = () => {
 
   if (!pdfUrl) return null;
 
-  const label = lang === "es" ? "Catálogo PDF" : "PDF Catalogue";
+  const label = lang === "es" ? "Catálogo" : "Catalogue";
 
   return (
     <a
@@ -36,14 +36,15 @@ export const CatalogButton = () => {
       target="_blank"
       rel="noopener noreferrer"
       data-testid="catalog-pdf-btn"
-      className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-40 group"
       aria-label={label}
+      className={
+        compact
+          ? "inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F0B400] hover:bg-[#FFC83D] text-black font-bold tracking-[0.15em] uppercase text-[10px] md:text-xs transition-all duration-200 hover:scale-[1.03] shadow-[0_0_12px_rgba(240,180,0,0.45)] hover:shadow-[0_0_20px_rgba(240,180,0,0.7)]"
+          : "inline-flex items-center gap-2 px-4 py-2 bg-[#F0B400] hover:bg-[#FFC83D] text-black font-bold tracking-[0.15em] uppercase text-xs transition-all duration-200 hover:scale-[1.03] shadow-[0_0_14px_rgba(240,180,0,0.5)] hover:shadow-[0_0_22px_rgba(240,180,0,0.75)]"
+      }
     >
-      <div className="flex items-center gap-3 px-5 py-3 md:px-6 md:py-4 bg-[#B8860B] hover:bg-[#D4A017] text-black font-bold tracking-[0.15em] uppercase text-xs md:text-sm shadow-2xl shadow-black/50 transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 border border-[#8B6508]">
-        <Download size={16} className="group-hover:translate-y-0.5 transition-transform" />
-        <span className="hidden sm:inline">{label}</span>
-        <span className="sm:hidden">PDF</span>
-      </div>
+      <Download size={compact ? 12 : 14} />
+      <span>{label}</span>
     </a>
   );
 };

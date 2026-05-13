@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
+import CatalogButton from "./CatalogButton";
 import { Menu, X } from "lucide-react";
 
 export const Nav = () => {
@@ -49,7 +50,10 @@ export const Nav = () => {
           ))}
         </nav>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 md:gap-4">
+          <div className="hidden sm:block">
+            <CatalogButton compact />
+          </div>
           <button
             data-testid="lang-toggle"
             onClick={toggle}
@@ -86,6 +90,9 @@ export const Nav = () => {
                 {l.label}
               </NavLink>
             ))}
+            <div className="pt-4">
+              <CatalogButton compact />
+            </div>
           </div>
         </div>
       )}

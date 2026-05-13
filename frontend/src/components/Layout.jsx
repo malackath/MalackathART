@@ -1,7 +1,6 @@
 import React from "react";
 import Nav from "./Nav";
 import Footer from "./Footer";
-import CatalogButton from "./CatalogButton";
 import { useLocation } from "react-router-dom";
 
 export const Layout = ({ children }) => {
@@ -12,7 +11,6 @@ export const Layout = ({ children }) => {
       <Nav />
       <main className={isAdmin ? "" : "pt-16 md:pt-20"}>{children}</main>
       {!isAdmin && <Footer />}
-      {!isAdmin && <CatalogButton />}
     </div>
   );
 };
