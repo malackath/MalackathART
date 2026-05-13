@@ -5,6 +5,8 @@ import { useLang } from "../contexts/LanguageContext";
 import { api } from "../lib/api";
 import { toast } from "sonner";
 import { Plus, Edit2, Trash2, X, Upload, GripVertical } from "lucide-react";
+import TextsEditor from "./admin/TextsEditor";
+import SettingsEditor from "./admin/SettingsEditor";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -289,29 +291,40 @@ export default function Admin() {
       </header>
 
       <div className="px-8 py-8">
-        <div className="flex items-center gap-6 mb-8 border-b border-white/10">
-          {["artworks", "exhibitions"].map((tk) => (
+        <div className="flex items-center gap-6 mb-8 border-b border-white/10 overflow-x-auto">
+          {[
+            { id: "artworks", label: t.admin.artworks },
+            { id: "exhibitions", label: t.admin.exhibitions },
+            { id: "texts", label: "Textos" },
+            { id: "settings", label: "Ajustes" },
+          ].map((tk) => (
             <button
-              key={tk}
-              data-testid={`admin-tab-${tk}`}
-              onClick={() => { setTab(tk); closeForm(); }}
-              className={`pb-3 text-sm tracking-[0.2em] uppercase ${
-                tab === tk ? "text-white border-b-2 border-white -mb-px" : "text-white/40"
+              key={tk.id}
+              data-testid={`admin-tab-${tk.id}`}
+              onClick={() => { setTab(tk.id); closeForm(); }}
+              className={`pb-3 text-sm tracking-[0.2em] uppercase whitespace-nowrap ${
+                tab === tk.id ? "text-white border-b-2 border-white -mb-px" : "text-white/40 hover:text-white/70"
               }`}
             >
-              {t.admin[tk]}
+              {tk.label}
             </button>
           ))}
-          <button
-            data-testid="admin-add"
-            onClick={startNew}
-            className="ml-auto inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase border border-white/30 px-3 py-2 hover:bg-white hover:text-black transition-colors mb-2"
-          >
-            <Plus size={14} /> {t.admin.add}
-          </button>
+          {(tab === "artworks" || tab === "exhibitions") && (
+            <button
+              data-testid="admin-add"
+              onClick={startNew}
+              className="ml-auto inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase border border-white/30 px-3 py-2 hover:bg-white hover:text-black transition-colors mb-2"
+            >
+              <Plus size={14} /> {t.admin.add}
+            </button>
+          )}
         </div>
 
-        {tab === "artworks" ? (
+        {tab === "texts" ? (
+          <TextsEditor />
+        ) : tab === "settings" ? (
+          <SettingsEditor />
+        ) : tab === "artworks" ? (
           <table className="w-full text-sm">
             <thead className="text-left text-xs tracking-[0.2em] uppercase text-white/40 border-b border-white/10">
               <tr>

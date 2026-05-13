@@ -182,6 +182,16 @@ class CheckoutCreate(BaseModel):
     buyer_email: Optional[EmailStr] = None
 
 
+class SiteTexts(BaseModel):
+    es: Dict = Field(default_factory=dict)
+    en: Dict = Field(default_factory=dict)
+
+
+class Settings(BaseModel):
+    catalog_pdf_url: Optional[str] = None
+    catalog_pdf_filename: Optional[str] = None
+
+
 # ---------------- Auth helpers ----------------
 def create_token(email: str) -> str:
     payload = {
@@ -413,6 +423,69 @@ async def update_artist(data: ArtistInfo, _: str = Depends(require_admin)):
         {"_id": "main"}, {"$set": data.model_dump()}, upsert=True
     )
     return data
+
+
+# ---------------- Site Texts ----------------
+@api.get("/site-texts", response_model=SiteTexts)
+async def get_site_texts():
+    doc = await db.site_texts.find_one({"_id": "main"}, {"_id": 0})
+    return SiteTexts(**(doc or {}))
+
+
+@api.put("/site-texts", response_model=SiteTexts)
+async def update_site_texts(data: SiteTexts, _: str = Depends(require_admin)):
+    await db.site_texts.update_one(
+        {"_id": "main"}, {"$set": data.model_dump()}, upsert=True
+    )
+    return data
+
+
+# ---------------- Settings ----------------
+@api.get("/settings", response_model=Settings)
+async def get_settings():
+    doc = await db.settings.find_one({"_id": "main"}, {"_id": 0})
+    return Settings(**(doc or {}))
+
+
+@api.put("/settings", response_model=Settings)
+async def update_settings(data: Settings, _: str = Depends(require_admin)):
+    await db.settings.update_one(
+        {"_id": "main"}, {"$set": data.model_dump()}, upsert=True
+    )
+    return data
+
+
+# ---------------- PDF Upload ----------------
+@api.post("/uploads/pdf")
+async def upload_pdf(file: UploadFile = File(...), _: str = Depends(require_admin)):
+    if file.content_type != "application/pdf":
+        raise HTTPException(400, "Only PDF files are accepted")
+    data = await file.read()
+    if len(data) > 30 * 1024 * 1024:
+        raise HTTPException(400, "PDF too large (max 30 MB)")
+    file_id = str(uuid.uuid4())
+    storage_path = f"{APP_NAME}/catalogs/{file_id}.pdf"
+    try:
+        result = put_object(storage_path, data, "application/pdf")
+    except Exception as e:
+        logger.error(f"PDF upload failed: {e}")
+        raise HTTPException(500, "Upload failed")
+    await db.files.insert_one({
+        "id": file_id,
+        "storage_path": result["path"],
+        "original_filename": file.filename,
+        "content_type": "application/pdf",
+        "size": result.get("size", len(data)),
+        "is_deleted": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    public_url = f"/api/files/{file_id}"
+    return {
+        "id": file_id,
+        "url": public_url,
+        "filename": file.filename,
+        "size": result.get("size", len(data)),
+    }
 
 
 # ---------------- Artworks ----------------

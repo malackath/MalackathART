@@ -26,70 +26,70 @@ export default function Home() {
 
   return (
     <div data-testid="home-page">
-      {/* HERO TEXT */}
-      <section className="max-w-[1400px] mx-auto px-6 md:px-12 pt-16 md:pt-24 pb-12 md:pb-16">
-        <div className="fade-up max-w-5xl">
-          <p className="text-xs tracking-[0.3em] uppercase text-white/50 mb-8">
-            {t.home.eyebrow}
-          </p>
-          <h1 className="font-display font-black tracking-tighter leading-[0.85] text-5xl sm:text-6xl md:text-7xl lg:text-8xl">
-            {t.home.hero1}<br />
-            <span className="italic font-bold">{t.home.hero2}</span><br />
-            {t.home.hero3}
-          </h1>
-          <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
-            <p className="max-w-lg text-base md:text-lg leading-relaxed text-white/60">
-              {t.home.lead}
-            </p>
-            <div className="md:text-right">
-              <Link
-                to="/works"
-                data-testid="home-explore-btn"
-                className="inline-flex items-center gap-3 px-7 py-4 border border-white/30 text-sm tracking-[0.2em] uppercase font-medium hover:bg-white hover:text-black transition-colors"
-              >
-                {t.home.explore}
-                <ArrowUpRight size={16} />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FEATURED — FULL WIDTH WITH HOVER REVEAL */}
-      {featured && (
-        <section className="w-full fade-up-d2">
+      {/* HERO with featured artwork as background */}
+      <section className="relative w-full min-h-[88vh] md:min-h-[92vh] overflow-hidden flex items-center group/hero">
+        {featured && (
           <Link
             to={`/works/${featured.id}`}
             data-testid="home-featured-link"
-            className="block group relative w-full overflow-hidden"
+            className="absolute inset-0 z-0 block"
+            aria-label={pick(featured, "title")}
           >
-            <div className="relative w-full h-[60vh] md:h-[85vh] overflow-hidden bg-black">
-              <img
-                src={featured.image_url}
-                alt={pick(featured, "title")}
-                className="w-full h-full object-cover scale-110 group-hover:scale-100 transition-all duration-[1200ms] ease-out filter brightness-[0.4] saturate-[0.35] group-hover:brightness-100 group-hover:saturate-100"
-              />
-              <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/60 via-transparent to-black/30 group-hover:from-black/20 group-hover:to-transparent transition-all duration-[1200ms]" />
+            <img
+              src={featured.image_url}
+              alt={pick(featured, "title")}
+              className="w-full h-full object-cover scale-110 group-hover/hero:scale-100 transition-all duration-[1500ms] ease-out filter brightness-[0.32] saturate-[0.3] group-hover/hero:brightness-[0.65] group-hover/hero:saturate-100"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black/80 group-hover/hero:from-black/40 group-hover/hero:via-black/20 group-hover/hero:to-black/60 transition-all duration-[1500ms]" />
+          </Link>
+        )}
 
-              <div className="absolute top-6 md:top-10 left-6 md:left-12 right-6 md:right-12 flex items-start justify-between">
-                <p className="text-xs tracking-[0.3em] uppercase text-white/70 font-medium">
-                  {t.home.featured}
-                </p>
-                <ArrowUpRight size={28} className="text-white opacity-60 group-hover:opacity-100 group-hover:rotate-12 transition-all duration-500" />
-              </div>
-
-              <div className="absolute bottom-8 md:bottom-12 left-6 md:left-12 right-6 md:right-12">
-                <h2 className="font-display font-black tracking-tighter text-4xl sm:text-6xl md:text-7xl lg:text-8xl leading-[0.85] text-white">
-                  {pick(featured, "title")}
-                </h2>
-                <div className="mt-3 text-sm md:text-base text-white/70 font-medium tracking-wide">
-                  {featured.year} · {pick(featured, "technique")}
-                </div>
+        <div className="relative z-10 w-full max-w-[1400px] mx-auto px-6 md:px-12 py-20 pointer-events-none">
+          <div className="fade-up max-w-5xl pointer-events-auto">
+            <p className="text-xs tracking-[0.3em] uppercase text-white/70 mb-8 font-medium">
+              {t.home.eyebrow}
+            </p>
+            <h1 className="font-display font-black tracking-tighter leading-[0.85] text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.6)]">
+              {t.home.hero1}<br />
+              <span className="italic font-bold">{t.home.hero2}</span><br />
+              {t.home.hero3}
+            </h1>
+            <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
+              <p className="max-w-lg text-base md:text-lg leading-relaxed text-white/85 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
+                {t.home.lead}
+              </p>
+              <div className="md:text-right">
+                <Link
+                  to="/works"
+                  data-testid="home-explore-btn"
+                  className="inline-flex items-center gap-3 px-7 py-4 bg-white text-black text-sm tracking-[0.2em] uppercase font-bold hover:bg-[#B8860B] hover:text-black transition-colors duration-300"
+                >
+                  {t.home.explore}
+                  <ArrowUpRight size={16} />
+                </Link>
               </div>
             </div>
-          </Link>
-        </section>
-      )}
+          </div>
+        </div>
+
+        {/* Featured artwork caption (bottom-right) */}
+        {featured && (
+          <div className="absolute bottom-6 md:bottom-10 right-6 md:right-12 z-10 text-right pointer-events-none">
+            <p className="text-[10px] md:text-xs tracking-[0.3em] uppercase text-white/60 mb-1 font-medium">
+              {t.home.featured}
+            </p>
+            <p className="font-display font-bold text-sm md:text-base text-white">
+              {pick(featured, "title")} · {featured.year}
+            </p>
+          </div>
+        )}
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-6 left-6 md:left-12 z-10 hidden sm:flex items-center gap-3 text-xs tracking-[0.3em] uppercase text-white/60 font-medium animate-pulse">
+          <span className="w-8 h-px bg-white/40" />
+          {lang === "es" ? "Desliza" : "Scroll"}
+        </div>
+      </section>
 
       {/* RECENT WORKS */}
       <section className="max-w-[1400px] mx-auto px-6 md:px-12 py-24 border-t border-white/10">

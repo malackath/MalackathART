@@ -1,0 +1,37 @@
+{
+  "summary": "Iteration 3 testing complete. All 3 new features verified working end-to-end: (1) site-texts editor with ES/EN overrides, (2) PDF catalog upload + global floating catalog button, (3) featured artwork as full-screen hero background. Backend: 10/10 new tests pass. Frontend: all data-testids and flows verified.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/checkout/status/{session_id}", "issue": "Pre-existing carry-over from iter 1 (Stripe stub-key). Out of scope for iter 3."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter3.py",
+    "/app/test_reports/pytest/iteration_3_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Home.jsx hero: featured artwork rendered as <img> with filter brightness-[0.32] saturate-[0.3] in default state, and group-hover brightness-[0.65] saturate-100. data-testid='home-featured-link' covers full hero area as a <Link>. Looks clean and matches spec.",
+    "CatalogButton.jsx: correctly fetches /api/settings on mount and conditionally renders. Uses fixed bottom-6 right-6 z-40. bg-[#B8860B] verified (computed rgb(184,134,11)). Has target=_blank + download attr. Not rendered on /admin because Layout omits it for admin routes (verified).",
+    "TextsEditor.jsx: dotted-path testids ('texts-input-home.hero1-es') work as designed; 22 input fields rendered across sections. Save button works and shows 'Textos guardados' toast.",
+    "Backend /api/uploads/pdf: validates content_type=='application/pdf', enforces 30MB max, stores via emergent object storage and inserts file metadata. Returns {id,url,filename,size}. Auth-gated (401 without admin).",
+    "Backend /api/site-texts and /api/settings: properly upserted on db.site_texts/db.settings with _id='main'. Public GETs return defaults when missing. Admin-gated PUTs. Clean implementation.",
+    "Suggestion: backend Settings model uses Optional[str]=None for catalog_pdf_url/filename; on PUT with explicit None, fields are still saved as None (verified). Good."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter3.py (new)"
+  ],
+  "success_rate": {"backend": "100% (10/10 iter-3 tests)", "frontend": "100% of iter-3 flows verified"},
+  "test_credentials": "admin@artist.com / Admin123! (works)",
+  "seed_data_creation": "None. End-of-test cleanup PUTs site-texts back to {es:{},en:{}} and settings back to {catalog_pdf_url:null, catalog_pdf_filename:null}. Confirmed via API (HTTP 200).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iter-3 backend tests live in /app/backend/tests/test_iter3.py (independent, idempotent, includes cleanup test_z_cleanup_restore_pristine_state). Run: REACT_APP_BACKEND_URL=<url> pytest backend/tests/test_iter3.py -v. Frontend testids verified: home-featured-link, admin-tab-{artworks,exhibitions,texts,settings}, texts-editor, texts-section-nav, texts-section-home, texts-input-{path}-{es|en} (e.g. texts-input-home.hero1-es), texts-save, settings-editor, settings-pdf-upload, settings-pdf-{view,replace,remove,input}, catalog-pdf-btn. The TextsEditor SaveAll succeeded with toast 'Textos guardados'. After uploading PDF the catalog button rendered with bg #B8860B (rgb(184,134,11)), target=_blank, download attr. Catalog button correctly hidden on /admin/* routes.",
+  "rca of the issue": "N/A - no issues found in iter-3 scope."
+}
