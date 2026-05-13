@@ -14,8 +14,8 @@ export default function Works() {
   return (
     <div data-testid="works-page" className="max-w-[1400px] mx-auto px-6 md:px-12 py-16 md:py-24">
       <header className="mb-16 md:mb-24 fade-up">
-        <p className="text-xs tracking-[0.3em] uppercase text-white/50 mb-6">2026</p>
-        <h1 className="font-display tracking-tighter text-5xl md:text-7xl leading-none">
+        <p className="text-xs tracking-[0.3em] uppercase font-medium text-white/50 mb-6">2026</p>
+        <h1 className="font-display font-black tracking-tighter text-5xl md:text-7xl leading-none">
           {t.works.title}
         </h1>
         <p className="mt-6 max-w-xl text-white/60">{t.works.subtitle}</p>
@@ -34,18 +34,18 @@ export default function Works() {
               <img
                 src={a.image_url}
                 alt={pick(a, "title")}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                className="w-full h-full object-cover scale-110 group-hover:scale-[1.18] transition-transform duration-700"
               />
             </div>
             <div className="mt-4 flex items-start justify-between">
               <div>
-                <div className="font-display text-xl tracking-tight">{pick(a, "title")}</div>
-                <div className="text-sm text-white/50 mt-1">
+                <div className="font-display font-bold text-xl tracking-tight">{pick(a, "title")}</div>
+                <div className="text-sm text-white/50 mt-1 font-medium">
                   {a.year} · {pick(a, "technique")}
                 </div>
               </div>
               <div
-                className={`text-[10px] tracking-[0.2em] uppercase px-2 py-1 ${
+                className={`text-[10px] tracking-[0.2em] uppercase font-bold px-2 py-1 ${
                   a.available ? "text-white/70 border border-white/20" : "text-white/40 border border-white/10"
                 }`}
               >

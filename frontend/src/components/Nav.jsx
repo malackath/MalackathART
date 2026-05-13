@@ -27,7 +27,7 @@ export const Nav = () => {
         <Link
           to="/"
           data-testid="nav-logo"
-          className="font-display tracking-tighter text-lg md:text-xl font-medium hover:text-white/70 transition-colors"
+          className="font-display font-black tracking-tighter text-lg md:text-xl hover:text-white/70 transition-colors"
         >
           ELENA CRUZ
         </Link>
@@ -39,7 +39,7 @@ export const Nav = () => {
               to={l.to}
               data-testid={l.id}
               className={({ isActive }) =>
-                `text-sm tracking-wide uppercase transition-colors ${
+                `text-sm tracking-wide uppercase font-medium transition-colors ${
                   isActive ? "text-white" : "text-white/60 hover:text-white"
                 }`
               }

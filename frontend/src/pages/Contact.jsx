@@ -13,8 +13,8 @@ export default function Contact() {
   return (
     <div data-testid="contact-page" className="max-w-[1400px] mx-auto px-6 md:px-12 py-16 md:py-32 min-h-[60vh]">
       <header className="mb-16 fade-up">
-        <p className="text-xs tracking-[0.3em] uppercase text-white/50 mb-6">2026</p>
-        <h1 className="font-display tracking-tighter text-5xl md:text-7xl leading-none">{t.contact.title}</h1>
+        <p className="text-xs tracking-[0.3em] uppercase font-medium text-white/50 mb-6">2026</p>
+        <h1 className="font-display font-black tracking-tighter text-5xl md:text-7xl leading-none">{t.contact.title}</h1>
         <p className="mt-6 max-w-xl text-white/60">{t.contact.subtitle}</p>
       </header>
       {artist && (

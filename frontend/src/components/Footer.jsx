@@ -11,7 +11,7 @@ export const Footer = () => {
     >
       <div className="max-w-[1400px] mx-auto px-6 md:px-12 py-12 flex flex-col md:flex-row md:items-end md:justify-between gap-8">
         <div>
-          <div className="font-display text-4xl md:text-5xl tracking-tighter leading-none">
+          <div className="font-display font-black text-4xl md:text-5xl tracking-tighter leading-none">
             ELENA<br />CRUZ
           </div>
           <p className="mt-4 text-sm text-white/50 max-w-xs">

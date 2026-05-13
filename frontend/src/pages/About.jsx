@@ -17,8 +17,8 @@ export default function About() {
   return (
     <div data-testid="about-page" className="max-w-[1400px] mx-auto px-6 md:px-12 py-16 md:py-24">
       <header className="mb-16 md:mb-20 fade-up">
-        <p className="text-xs tracking-[0.3em] uppercase text-white/50 mb-6">{t.about.title}</p>
-        <h1 className="font-display tracking-tighter text-5xl md:text-7xl leading-none">{artist.name}</h1>
+        <p className="text-xs tracking-[0.3em] uppercase font-medium text-white/50 mb-6">{t.about.title}</p>
+        <h1 className="font-display font-black tracking-tighter text-5xl md:text-7xl leading-none">{artist.name}</h1>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20">

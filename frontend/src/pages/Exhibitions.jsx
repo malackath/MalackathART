@@ -20,8 +20,8 @@ export default function Exhibitions() {
   return (
     <div data-testid="exhibitions-page" className="max-w-[1400px] mx-auto px-6 md:px-12 py-16 md:py-24">
       <header className="mb-16 md:mb-24 fade-up">
-        <p className="text-xs tracking-[0.3em] uppercase text-white/50 mb-6">2026 — 2027</p>
-        <h1 className="font-display tracking-tighter text-5xl md:text-7xl leading-none">{t.exhibitions.title}</h1>
+        <p className="text-xs tracking-[0.3em] uppercase font-medium text-white/50 mb-6">2026 — 2027</p>
+        <h1 className="font-display font-black tracking-tighter text-5xl md:text-7xl leading-none">{t.exhibitions.title}</h1>
         <p className="mt-6 max-w-xl text-white/60">{t.exhibitions.subtitle}</p>
       </header>
 
@@ -40,7 +40,7 @@ export default function Exhibitions() {
                 <div className="text-xs tracking-[0.2em] uppercase text-white/30 mt-1">→ {formatDate(e.end_date)}</div>
               </div>
               <div className="col-span-12 md:col-span-7">
-                <h2 className="font-display tracking-tighter text-3xl md:text-4xl leading-none">{pick(e, "title")}</h2>
+                <h2 className="font-display font-black tracking-tighter text-3xl md:text-4xl leading-none">{pick(e, "title")}</h2>
                 {pick(e, "description") && (
                   <p className="mt-4 text-sm text-white/60 max-w-xl">{pick(e, "description")}</p>
                 )}

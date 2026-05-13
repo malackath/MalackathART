@@ -11,6 +11,8 @@ from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional, Dict
 import uuid
 from datetime import datetime, timezone, timedelta
+from io import BytesIO
+from PIL import Image, ImageOps
 import bcrypt
 import jwt
 from emergentintegrations.payments.stripe.checkout import (
@@ -639,7 +641,31 @@ async def root():
 
 # ---------------- Uploads ----------------
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
-MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
+MAX_UPLOAD_BYTES = 25 * 1024 * 1024  # 25 MB raw upload, then we compress
+MAX_DIMENSION = 2000  # max width/height after resize
+JPEG_QUALITY = 85
+
+
+def optimize_image(data: bytes) -> tuple[bytes, str]:
+    """Resize to max 2000px on longest side, strip metadata, save as JPEG.
+    Returns (optimized_bytes, content_type)."""
+    img = Image.open(BytesIO(data))
+    img = ImageOps.exif_transpose(img)  # respect EXIF rotation
+    # Flatten transparency onto white if needed (PNG with alpha)
+    if img.mode in ("RGBA", "LA", "P"):
+        bg = Image.new("RGB", img.size, (255, 255, 255))
+        if img.mode != "RGB":
+            img = img.convert("RGBA")
+        bg.paste(img, mask=img.split()[-1] if img.mode == "RGBA" else None)
+        img = bg
+    elif img.mode != "RGB":
+        img = img.convert("RGB")
+
+    # Resize keeping aspect ratio
+    img.thumbnail((MAX_DIMENSION, MAX_DIMENSION), Image.LANCZOS)
+    out = BytesIO()
+    img.save(out, format="JPEG", quality=JPEG_QUALITY, optimize=True, progressive=True)
+    return out.getvalue(), "image/jpeg"
 
 
 @api.post("/uploads/image")
@@ -648,12 +674,16 @@ async def upload_image(file: UploadFile = File(...), _: str = Depends(require_ad
         raise HTTPException(400, f"Unsupported file type: {file.content_type}")
     data = await file.read()
     if len(data) > MAX_UPLOAD_BYTES:
-        raise HTTPException(400, "File too large (max 10 MB)")
-    ext = (file.filename.rsplit(".", 1)[-1] if "." in (file.filename or "") else "bin").lower()
-    file_id = str(uuid.uuid4())
-    storage_path = f"{APP_NAME}/artworks/{file_id}.{ext}"
+        raise HTTPException(400, "File too large (max 25 MB)")
     try:
-        result = put_object(storage_path, data, file.content_type)
+        optimized, content_type = optimize_image(data)
+    except Exception as e:
+        logger.error(f"Image optimization failed: {e}")
+        raise HTTPException(400, "Could not process image")
+    file_id = str(uuid.uuid4())
+    storage_path = f"{APP_NAME}/artworks/{file_id}.jpg"
+    try:
+        result = put_object(storage_path, optimized, content_type)
     except Exception as e:
         logger.error(f"Upload failed: {e}")
         raise HTTPException(500, "Upload failed")
@@ -661,14 +691,19 @@ async def upload_image(file: UploadFile = File(...), _: str = Depends(require_ad
         "id": file_id,
         "storage_path": result["path"],
         "original_filename": file.filename,
-        "content_type": file.content_type,
-        "size": result.get("size", len(data)),
+        "content_type": content_type,
+        "size": result.get("size", len(optimized)),
+        "original_size": len(data),
         "is_deleted": False,
         "created_at": datetime.now(timezone.utc).isoformat(),
     })
-    # Public URL through our own /api/files/{id} proxy
     public_url = f"/api/files/{file_id}"
-    return {"id": file_id, "url": public_url, "size": result.get("size", len(data))}
+    return {
+        "id": file_id,
+        "url": public_url,
+        "size": result.get("size", len(optimized)),
+        "original_size": len(data),
+    }
 
 
 @api.get("/files/{file_id}")
@@ -686,6 +721,38 @@ async def download_file(file_id: str):
         media_type=record.get("content_type", content_type),
         headers={"Cache-Control": "public, max-age=31536000, immutable"},
     )
+
+
+@api.post("/uploads/optimize-existing")
+async def optimize_existing(_: str = Depends(require_admin)):
+    """One-time: re-process existing files >2MB to a smaller JPEG.
+    Keeps the same file_id (URL stays the same) but updates storage_path."""
+    threshold = 2 * 1024 * 1024
+    cursor = db.files.find({"is_deleted": False, "size": {"$gt": threshold}}, {"_id": 0})
+    processed = []
+    async for record in cursor:
+        try:
+            data, _ct = get_object(record["storage_path"])
+            optimized, _new_ct = optimize_image(data)
+            new_path = f"{APP_NAME}/artworks/{record['id']}-opt-{uuid.uuid4().hex[:6]}.jpg"
+            result = put_object(new_path, optimized, "image/jpeg")
+            await db.files.update_one(
+                {"id": record["id"]},
+                {"$set": {
+                    "storage_path": result["path"],
+                    "content_type": "image/jpeg",
+                    "size": result.get("size", len(optimized)),
+                    "original_size": record.get("size"),
+                }},
+            )
+            processed.append({
+                "id": record["id"],
+                "old_size": record.get("size"),
+                "new_size": result.get("size", len(optimized)),
+            })
+        except Exception as e:
+            logger.error(f"Optimize failed for {record.get('id')}: {e}")
+    return {"processed": len(processed), "items": processed}
 
 
 app.include_router(api)

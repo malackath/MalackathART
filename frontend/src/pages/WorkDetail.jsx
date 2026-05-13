@@ -107,7 +107,7 @@ export default function WorkDetail() {
         </div>
 
         <aside className="lg:col-span-4 lg:sticky lg:top-28 lg:self-start fade-up-d1">
-          <h1 className="font-display tracking-tighter text-3xl md:text-4xl leading-none">
+          <h1 className="font-display font-black tracking-tighter text-3xl md:text-4xl leading-none">
             {pick(art, "title")}
           </h1>
 
