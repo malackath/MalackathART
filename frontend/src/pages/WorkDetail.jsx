@@ -158,7 +158,7 @@ export default function WorkDetail() {
           </dl>
 
           <p
-            className="mt-8 text-sm leading-relaxed"
+            className="mt-8 text-base leading-relaxed"
             style={{ color: "var(--app-text-soft)" }}
           >
             {pick(art, "description")}
