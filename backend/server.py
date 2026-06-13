@@ -866,3 +866,19 @@ app.add_middleware(
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+
+# Serve React frontend static files
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse as _FileResponse
+
+_STATIC_DIR = ROOT_DIR.parent / "frontend" / "build"
+
+if _STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(_STATIC_DIR / "static")), name="static-assets")
+
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    _index = _STATIC_DIR / "index.html"
+    if _index.exists():
+        return _FileResponse(str(_index))
+    return {"status": "frontend not built"}
