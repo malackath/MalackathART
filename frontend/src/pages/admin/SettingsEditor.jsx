@@ -18,6 +18,15 @@ export default function SettingsEditor() {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [deletingSerie, setDeletingSerie] = useState(null);
+
+  // Normalize series from API: accepts both strings and {name, order} objects
+  const normalizeSeries = (raw) => {
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .map((s, i) => typeof s === "string" ? { name: s, order: i } : s)
+      .sort((a, b) => a.order - b.order);
+  };
 
   const load = () => {
     api.get("/settings").then((r) => setSettings({
@@ -25,7 +34,7 @@ export default function SettingsEditor() {
       catalog_pdf_filename: r.data?.catalog_pdf_filename || null,
       featured_seconds: r.data?.featured_seconds || 5,
       recent_works_count: r.data?.recent_works_count || 4,
-      series: r.data?.series || [],
+      series: normalizeSeries(r.data?.series),
     }));
   };
 
@@ -38,13 +47,43 @@ export default function SettingsEditor() {
   const saveSettings = async () => {
     setSaving(true);
     try {
-      await api.put("/settings", settings);
+      // Re-assign order based on current position before saving
+      const reordered = settings.series.map((s, i) => ({ ...s, order: i }));
+      await api.put("/settings", { ...settings, series: reordered });
       toast.success("Ajustes guardados");
+      load();
     } catch (e) {
       toast.error("Error: " + (e.response?.data?.detail || e.message));
     } finally {
       setSaving(false);
     }
+  };
+
+  const deleteSerie = async (serieName, idx) => {
+    if (!window.confirm(`¿Eliminar la serie "${serieName}"? Las obras asignadas a esta serie quedarán sin serie.`)) return;
+    setDeletingSerie(serieName);
+    try {
+      await api.delete(`/settings/series/${encodeURIComponent(serieName)}`);
+      toast.success(`Serie "${serieName}" eliminada`);
+      load();
+    } catch (e) {
+      // Fallback: if endpoint doesn't exist yet, remove locally and save
+      const next = settings.series.filter((_, j) => j !== idx).map((s, i) => ({ ...s, order: i }));
+      await api.put("/settings", { ...settings, series: next });
+      toast.success(`Serie "${serieName}" eliminada`);
+      load();
+    } finally {
+      setDeletingSerie(null);
+    }
+  };
+
+  const addSerie = () => {
+    if (!newSerie.trim()) return;
+    const already = settings.series.some((s) => s.name === newSerie.trim());
+    if (already) { toast.error("Ya existe esa serie"); return; }
+    const next = [...settings.series, { name: newSerie.trim(), order: settings.series.length }];
+    setSettings({ ...settings, series: next });
+    setNewSerie("");
   };
 
   const handleUpload = async (file) => {
@@ -178,14 +217,20 @@ export default function SettingsEditor() {
           </button>
         </div>
         <p className="text-sm text-white/60 mb-6 leading-relaxed">
-          Definí las series para agrupar las obras en el catálogo.
+          Definí las series para agrupar las obras en el catálogo. Podés arrastrar para reordenar.<br />
+          <span className="text-red-400/80">Eliminar una serie desasigna todas las obras que pertenecen a ella.</span>
         </p>
 
         {/* Lista de series — draggable */}
         <div className="flex flex-col gap-2 mb-4" id="series-list">
-          {(settings.series || []).map((s, i) => (
+          {settings.series.length === 0 && (
+            <p className="text-white/30 text-sm py-4 text-center border border-dashed border-white/10">
+              No hay series todavía. Agregá una abajo.
+            </p>
+          )}
+          {settings.series.map((s, i) => (
             <div
-              key={s + i}
+              key={s.name + i}
               draggable
               onDragStart={(e) => {
                 e.dataTransfer.setData("text/plain", String(i));
@@ -203,23 +248,26 @@ export default function SettingsEditor() {
                 const next = [...settings.series];
                 const [moved] = next.splice(from, 1);
                 next.splice(to, 0, moved);
-                setSettings((prev) => ({ ...prev, series: next }));
+                setSettings((prev) => ({ ...prev, series: next.map((x, idx) => ({ ...x, order: idx })) }));
               }}
               className="flex items-center justify-between border border-white/10 px-4 py-2 cursor-grab hover:border-white/30 transition-colors"
             >
               <div className="flex items-center gap-3">
                 <span className="text-white/20 select-none text-lg">⠿</span>
-                <span className="text-sm text-white">{s}</span>
+                <span className="text-sm text-white">{s.name}</span>
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  const next = settings.series.filter((_, j) => j !== i);
-                  setSettings((prev) => ({ ...prev, series: next }));
-                }}
-                className="text-white/40 hover:text-red-400 transition-colors ml-4"
+                onClick={() => deleteSerie(s.name, i)}
+                disabled={deletingSerie === s.name}
+                className="text-white/40 hover:text-red-400 transition-colors ml-4 disabled:opacity-40"
+                title="Eliminar serie"
               >
-                <X size={14} />
+                {deletingSerie === s.name ? (
+                  <span className="text-xs text-red-400">...</span>
+                ) : (
+                  <X size={14} />
+                )}
               </button>
             </div>
           ))}
@@ -234,24 +282,19 @@ export default function SettingsEditor() {
             placeholder="Nueva serie..."
             className="flex-1 bg-transparent border border-white/20 focus:border-white outline-none px-3 py-2 text-white text-sm"
             onKeyDown={(e) => {
-              if (e.key === "Enter" && newSerie.trim()) {
-                setSettings({ ...settings, series: [...(settings.series || []), newSerie.trim()] });
-                setNewSerie("");
-              }
+              if (e.key === "Enter") addSerie();
             }}
           />
           <button
-            onClick={() => {
-              if (newSerie.trim()) {
-                setSettings({ ...settings, series: [...(settings.series || []), newSerie.trim()] });
-                setNewSerie("");
-              }
-            }}
+            onClick={addSerie}
             className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm transition-colors"
           >
             + Agregar
           </button>
         </div>
+        <p className="text-xs text-white/30 mt-3">
+          Después de agregar o reordenar, presioná <strong className="text-white/50">Guardar</strong> para aplicar los cambios.
+        </p>
       </div>
 
       {/* PDF Catalog */}
