@@ -209,15 +209,16 @@ def create_token(email: str) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
 
 
-def require_admin(creds: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> str:
+def require_admin(creds: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> dict:
     if creds is None:
         raise HTTPException(status_code=401, detail="Missing token")
     try:
         payload = jwt.decode(creds.credentials, JWT_SECRET, algorithms=[JWT_ALG])
         email = payload.get("sub")
-        if email != ADMIN_EMAIL:
+        role = payload.get("role", "admin")
+        if not email:
             raise HTTPException(status_code=403, detail="Forbidden")
-        return email
+        return {"email": email, "role": role}
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
@@ -426,7 +427,7 @@ async def get_artist():
 
 
 @api.put("/artist", response_model=ArtistInfo)
-async def update_artist(data: ArtistInfo, _: str = Depends(require_admin)):
+async def update_artist(data: ArtistInfo, _=Depends(require_admin)):
     await db.artist_info.update_one(
         {"_id": "main"}, {"$set": data.model_dump()}, upsert=True
     )
@@ -441,7 +442,7 @@ async def get_site_texts():
 
 
 @api.put("/site-texts", response_model=SiteTexts)
-async def update_site_texts(data: SiteTexts, _: str = Depends(require_admin)):
+async def update_site_texts(data: SiteTexts, _=Depends(require_admin)):
     await db.site_texts.update_one(
         {"_id": "main"}, {"$set": data.model_dump()}, upsert=True
     )
@@ -456,7 +457,7 @@ async def get_settings():
 
 
 @api.put("/settings", response_model=Settings)
-async def update_settings(data: Settings, _: str = Depends(require_admin)):
+async def update_settings(data: Settings, _=Depends(require_admin)):
     await db.settings.update_one(
         {"_id": "main"}, {"$set": data.model_dump()}, upsert=True
     )
@@ -471,7 +472,7 @@ async def get_text_styles():
 
 
 @api.put("/text-styles", response_model=TextStyles)
-async def update_text_styles(data: TextStyles, _: str = Depends(require_admin)):
+async def update_text_styles(data: TextStyles, _=Depends(require_admin)):
     await db.text_styles.update_one(
         {"_id": "main"}, {"$set": data.model_dump()}, upsert=True
     )
@@ -480,7 +481,7 @@ async def update_text_styles(data: TextStyles, _: str = Depends(require_admin)):
 
 # ---------------- PDF Upload ----------------
 @api.post("/uploads/pdf")
-async def upload_pdf(file: UploadFile = File(...), _: str = Depends(require_admin)):
+async def upload_pdf(file: UploadFile = File(...), _=Depends(require_admin)):
     if file.content_type != "application/pdf":
         raise HTTPException(400, "Only PDF files are accepted")
     data = await file.read()
@@ -535,7 +536,7 @@ async def get_artwork(artwork_id: str):
 
 
 @api.post("/artworks", response_model=Artwork)
-async def create_artwork(data: ArtworkInput, _: str = Depends(require_admin)):
+async def create_artwork(data: ArtworkInput, _=Depends(require_admin)):
     # Auto-cleanup: when admin creates first real artwork, remove all seeded samples
     real_count = await db.artworks.count_documents({"is_seed": {"$ne": True}})
     if real_count == 0:
@@ -548,19 +549,19 @@ async def create_artwork(data: ArtworkInput, _: str = Depends(require_admin)):
 
 
 @api.put("/artworks/reorder")
-async def reorder_artworks(items: List[ReorderItem], _: str = Depends(require_admin)):
+async def reorder_artworks(items: List[ReorderItem], _=Depends(require_admin)):
     for it in items:
         await db.artworks.update_one({"id": it.id}, {"$set": {"order": it.order}})
 
 @api.put("/exhibitions/reorder")
-async def reorder_exhibitions(items: List[ReorderItem], _: str = Depends(require_admin)):
+async def reorder_exhibitions(items: List[ReorderItem], _=Depends(require_admin)):
     for it in items:
         await db.exhibitions.update_one({"id": it.id}, {"$set": {"order": it.order}})
     return {"ok": True, "updated": len(items)}
 
 
 @api.put("/artworks/{artwork_id}", response_model=Artwork)
-async def update_artwork(artwork_id: str, data: ArtworkInput, _: str = Depends(require_admin)):
+async def update_artwork(artwork_id: str, data: ArtworkInput, _=Depends(require_admin)):
     result = await db.artworks.update_one({"id": artwork_id}, {"$set": data.model_dump()})
     if result.matched_count == 0:
         raise HTTPException(404, "Artwork not found")
@@ -571,7 +572,7 @@ async def update_artwork(artwork_id: str, data: ArtworkInput, _: str = Depends(r
 
 
 @api.delete("/artworks/{artwork_id}")
-async def delete_artwork(artwork_id: str, _: str = Depends(require_admin)):
+async def delete_artwork(artwork_id: str, _=Depends(require_admin)):
     result = await db.artworks.delete_one({"id": artwork_id})
     if result.deleted_count == 0:
         raise HTTPException(404, "Artwork not found")
@@ -589,7 +590,7 @@ async def list_exhibitions():
 
 
 @api.post("/exhibitions", response_model=Exhibition)
-async def create_exhibition(data: ExhibitionInput, _: str = Depends(require_admin)):
+async def create_exhibition(data: ExhibitionInput, _=Depends(require_admin)):
     real_count = await db.exhibitions.count_documents({"is_seed": {"$ne": True}})
     if real_count == 0:
         await db.exhibitions.delete_many({"is_seed": True})
@@ -601,7 +602,7 @@ async def create_exhibition(data: ExhibitionInput, _: str = Depends(require_admi
 
 
 @api.put("/exhibitions/{exhibition_id}", response_model=Exhibition)
-async def update_exhibition(exhibition_id: str, data: ExhibitionInput, _: str = Depends(require_admin)):
+async def update_exhibition(exhibition_id: str, data: ExhibitionInput, _=Depends(require_admin)):
     result = await db.exhibitions.update_one({"id": exhibition_id}, {"$set": data.model_dump()})
     if result.matched_count == 0:
         raise HTTPException(404, "Exhibition not found")
@@ -612,7 +613,7 @@ async def update_exhibition(exhibition_id: str, data: ExhibitionInput, _: str = 
 
 
 @api.delete("/exhibitions/{exhibition_id}")
-async def delete_exhibition(exhibition_id: str, _: str = Depends(require_admin)):
+async def delete_exhibition(exhibition_id: str, _=Depends(require_admin)):
     result = await db.exhibitions.delete_one({"id": exhibition_id})
     if result.deleted_count == 0:
         raise HTTPException(404, "Exhibition not found")
@@ -913,7 +914,7 @@ class BulkSeriesUpdate(BaseModel):
     series: str
 
 @api.post("/artworks/bulk-series")
-async def bulk_update_series(data: BulkSeriesUpdate, _: str = Depends(require_admin)):
+async def bulk_update_series(data: BulkSeriesUpdate, _=Depends(require_admin)):
     await db.artworks.update_many(
         {"id": {"$in": data.artwork_ids}},
         {"$set": {"series": data.series}}
@@ -956,7 +957,7 @@ def optimize_image(data: bytes) -> tuple[bytes, str]:
 
 
 @api.post("/uploads/image")
-async def upload_image(file: UploadFile = File(...), _: str = Depends(require_admin)):
+async def upload_image(file: UploadFile = File(...), _=Depends(require_admin)):
     if file.content_type not in ALLOWED_IMAGE_TYPES:
         raise HTTPException(400, f"Unsupported file type: {file.content_type}")
     data = await file.read()
@@ -1011,7 +1012,7 @@ async def download_file(file_id: str):
 
 
 @api.post("/uploads/optimize-existing")
-async def optimize_existing(_: str = Depends(require_admin)):
+async def optimize_existing(_=Depends(require_admin)):
     """One-time: re-process existing files >2MB to a smaller JPEG.
     Keeps the same file_id (URL stays the same) but updates storage_path."""
     threshold = 2 * 1024 * 1024
