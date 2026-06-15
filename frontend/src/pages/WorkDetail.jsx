@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import SEO from "../components/SEO";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
 import { api } from "../lib/api";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
@@ -12,6 +13,7 @@ export default function WorkDetail() {
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(false);
   const [activeImage, setActiveImage] = useState(null);
+  const [allArtworks, setAllArtworks] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,6 +26,14 @@ export default function WorkDetail() {
       .catch(() => setArt(null))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    api.get("/artworks").then((r) => setAllArtworks(r.data)).catch(() => {});
+  }, []);
+
+  const currentIndex = allArtworks.findIndex((a) => a.id === id);
+  const prevArt = currentIndex > 0 ? allArtworks[currentIndex - 1] : null;
+  const nextArt = currentIndex < allArtworks.length - 1 ? allArtworks[currentIndex + 1] : null;
 
   const handleBuy = async () => {
     if (!art) return;
@@ -41,7 +51,11 @@ export default function WorkDetail() {
   };
 
   if (loading) {
-    return (
+    const seoTitle = art ? pick(art, "title") : "Obra";
+  const seoDesc = art ? `${pick(art, "title")} (${art.year}). ${pick(art, "technique") || ""}. ${pick(art, "description") || ""}`.slice(0, 160) : "";
+  const seoImg = art?.image_url || "";
+
+  return (
       <div
         data-testid="detail-loading"
         className="max-w-[1400px] mx-auto px-6 md:px-12 py-32"
@@ -73,14 +87,50 @@ export default function WorkDetail() {
 
   return (
     <div data-testid="detail-page" className="max-w-[1400px] mx-auto px-6 md:px-12 py-12 md:py-20">
-      <button
-        onClick={() => navigate(-1)}
-        data-testid="detail-back"
-        className="inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase mb-12 hover:!text-[var(--app-text)]"
-        style={{ color: "var(--app-text-soft)" }}
-      >
-        <ArrowLeft size={14} /> {t.detail.back}
-      </button>
+      <div className="flex flex-col gap-4 mb-12">
+        {/* Fila 1: Volver */}
+        <button
+          onClick={() => navigate(-1)}
+          data-testid="detail-back"
+          className="inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase self-start hover:!text-[var(--app-text)]"
+          style={{ color: "var(--app-text-soft)" }}
+        >
+          <ArrowLeft size={14} /> {t.detail.back}
+        </button>
+
+        {/* Fila 2: Anterior / contador / Siguiente */}
+        {(prevArt || nextArt) && allArtworks.length > 0 && (
+          <div className="flex items-center justify-between border-t pt-4" style={{ borderColor: "var(--app-border)" }}>
+            {prevArt ? (
+              <button
+                onClick={() => navigate(`/works/${prevArt.id}`)}
+                className="flex items-center gap-2 text-xs tracking-[0.2em] uppercase hover:!text-[var(--app-text)] transition-opacity max-w-[35%] text-left"
+                style={{ color: "var(--app-text-soft)" }}
+              >
+                <ArrowLeft size={14} className="flex-shrink-0" />
+                <span className="truncate hidden sm:inline">{pick(prevArt, "title")}</span>
+                <span className="sm:hidden">{lang === "es" ? "Anterior" : "Prev"}</span>
+              </button>
+            ) : <div />}
+
+            <span className="text-xs font-medium" style={{ color: "var(--app-text-dim)" }}>
+              {currentIndex + 1} / {allArtworks.length}
+            </span>
+
+            {nextArt ? (
+              <button
+                onClick={() => navigate(`/works/${nextArt.id}`)}
+                className="flex items-center gap-2 text-xs tracking-[0.2em] uppercase hover:!text-[var(--app-text)] transition-opacity max-w-[35%] text-right"
+                style={{ color: "var(--app-text-soft)" }}
+              >
+                <span className="truncate hidden sm:inline">{pick(nextArt, "title")}</span>
+                <span className="sm:hidden">{lang === "es" ? "Siguiente" : "Next"}</span>
+                <ArrowLeft size={14} className="rotate-180 flex-shrink-0" />
+              </button>
+            ) : <div />}
+          </div>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
         <div className="lg:col-span-8 fade-up">
@@ -157,12 +207,11 @@ export default function WorkDetail() {
               ))}
           </dl>
 
-          <p
-            className="mt-8 text-base leading-relaxed"
+          <div
+            className="mt-8 text-base leading-relaxed prose-art"
             style={{ color: "var(--app-text-soft)" }}
-          >
-            {pick(art, "description")}
-          </p>
+            dangerouslySetInnerHTML={{ __html: pick(art, "description") || "" }}
+          />
           <p
             className="mt-4 text-xs italic"
             style={{ color: "var(--app-text-muted)" }}
@@ -171,20 +220,19 @@ export default function WorkDetail() {
           </p>
 
           {art.available ? (
-            <button
-              onClick={handleBuy}
-              disabled={buying}
+            <Link
+              to={`/contact?obra=${encodeURIComponent(pick(art, "title"))}`}
               data-testid="buy-artwork-button"
-              className="mt-10 w-full inline-flex items-center justify-center gap-3 px-7 py-4 text-sm tracking-[0.2em] uppercase font-bold transition-colors disabled:opacity-50"
+              className="mt-10 w-full inline-flex items-center justify-center gap-3 px-7 py-4 text-sm tracking-[0.2em] uppercase font-bold transition-colors"
               style={{
                 backgroundColor: "var(--app-invert)",
                 color: "var(--app-invert-text)",
                 border: "1px solid var(--app-invert)",
               }}
             >
-              {buying ? t.detail.buying : t.detail.buy}
-              {!buying && <ArrowUpRight size={16} />}
-            </button>
+              {t.detail.buy}
+              <ArrowUpRight size={16} />
+            </Link>
           ) : (
             <div
               data-testid="sold-banner"

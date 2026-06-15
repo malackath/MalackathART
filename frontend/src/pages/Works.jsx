@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import SEO from "../components/SEO";
 import { Link } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
 import { api } from "../lib/api";
@@ -12,7 +13,9 @@ export default function Works() {
   }, []);
 
   return (
-    <div data-testid="works-page" className="max-w-[1400px] mx-auto px-6 md:px-12 py-16 md:py-24">
+    <>
+    <SEO title="Obras" description="Catálogo completo de obras de Bernardo Arnelli. Acrílico, óleo y técnica mixta sobre lienzo y papel." url="/works" />
+        <div data-testid="works-page" className="max-w-[1400px] mx-auto px-6 md:px-12 py-16 md:py-24">
       <header className="mb-16 md:mb-24 fade-up">
         <p
           className="text-xs tracking-[0.3em] uppercase font-medium mb-6"
@@ -82,5 +85,6 @@ export default function Works() {
         ))}
       </div>
     </div>
+    </>
   );
 }

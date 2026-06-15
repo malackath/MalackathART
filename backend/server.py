@@ -15,12 +15,7 @@ from io import BytesIO
 from PIL import Image, ImageOps
 import bcrypt
 import jwt
-from emergentintegrations.payments.stripe.checkout import (
-    StripeCheckout,
-    CheckoutSessionResponse,
-    CheckoutStatusResponse,
-    CheckoutSessionRequest,
-)
+import stripe  # official Stripe SDK
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
@@ -145,8 +140,8 @@ class Exhibition(BaseModel):
     venue: str
     city: str
     country: str
-    start_date: str  # ISO date
-    end_date: str
+    start_date: Optional[str] = None  # ISO date or free text
+    end_date: Optional[str] = None
     description: Optional[str] = None
     description_en: Optional[str] = None
     image_url: Optional[str] = None
@@ -160,15 +155,18 @@ class ExhibitionInput(BaseModel):
     venue: str
     city: str
     country: str
-    start_date: str
-    end_date: str
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
     description: Optional[str] = None
     description_en: Optional[str] = None
     image_url: Optional[str] = None
+    order: int = 0
 
 
 class ArtistInfo(BaseModel):
     name: str
+    bio_hero_es: Optional[str] = ""
+    bio_hero_en: Optional[str] = ""
     bio_es: str
     bio_en: str
     portrait_url: str
@@ -549,6 +547,11 @@ async def create_artwork(data: ArtworkInput, _: str = Depends(require_admin)):
 async def reorder_artworks(items: List[ReorderItem], _: str = Depends(require_admin)):
     for it in items:
         await db.artworks.update_one({"id": it.id}, {"$set": {"order": it.order}})
+
+@api.put("/exhibitions/reorder")
+async def reorder_exhibitions(items: List[ReorderItem], _: str = Depends(require_admin)):
+    for it in items:
+        await db.exhibitions.update_one({"id": it.id}, {"$set": {"order": it.order}})
     return {"ok": True, "updated": len(items)}
 
 
@@ -574,7 +577,7 @@ async def delete_artwork(artwork_id: str, _: str = Depends(require_admin)):
 # ---------------- Exhibitions ----------------
 @api.get("/exhibitions", response_model=List[Exhibition])
 async def list_exhibitions():
-    docs = await db.exhibitions.find({}, {"_id": 0}).sort("start_date", 1).to_list(500)
+    docs = await db.exhibitions.find({}, {"_id": 0}).sort("order", 1).to_list(500)
     for d in docs:
         if isinstance(d.get("created_at"), str):
             d["created_at"] = datetime.fromisoformat(d["created_at"])
@@ -624,10 +627,6 @@ async def create_checkout(data: CheckoutCreate, http_request: Request):
     amount = float(artwork["price"])
     currency = artwork.get("currency", "usd")
 
-    host_url = str(http_request.base_url)
-    webhook_url = f"{host_url}api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
-
     origin = data.origin_url.rstrip("/")
     success_url = f"{origin}/success?session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{origin}/works/{data.artwork_id}"
@@ -638,17 +637,29 @@ async def create_checkout(data: CheckoutCreate, http_request: Request):
         "buyer_email": data.buyer_email or "",
     }
 
-    req = CheckoutSessionRequest(
-        amount=amount,
-        currency=currency,
+    stripe.api_key = STRIPE_API_KEY
+    session = stripe.checkout.Session.create(
+        payment_method_types=["card"],
+        line_items=[{
+            "price_data": {
+                "currency": currency,
+                "product_data": {
+                    "name": artwork.get("title", "Obra de arte"),
+                    "description": artwork.get("description", "")[:500] if artwork.get("description") else "",
+                },
+                "unit_amount": int(amount * 100),  # Stripe uses cents
+            },
+            "quantity": 1,
+        }],
+        mode="payment",
         success_url=success_url,
         cancel_url=cancel_url,
         metadata=metadata,
+        customer_email=data.buyer_email or None,
     )
-    session: CheckoutSessionResponse = await stripe_checkout.create_checkout_session(req)
 
     tx = {
-        "session_id": session.session_id,
+        "session_id": session.id,
         "artwork_id": data.artwork_id,
         "amount": amount,
         "currency": currency,
@@ -659,7 +670,7 @@ async def create_checkout(data: CheckoutCreate, http_request: Request):
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.payment_transactions.insert_one(tx)
-    return {"url": session.url, "session_id": session.session_id}
+    return {"url": session.url, "session_id": session.id}
 
 
 @api.get("/checkout/status/{session_id}")
@@ -678,13 +689,11 @@ async def checkout_status(session_id: str, http_request: Request):
             "artwork_id": tx.get("artwork_id"),
         }
 
-    host_url = str(http_request.base_url)
-    webhook_url = f"{host_url}api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
-    status_resp: CheckoutStatusResponse = await stripe_checkout.get_checkout_status(session_id)
+    stripe.api_key = STRIPE_API_KEY
+    session = stripe.checkout.Session.retrieve(session_id)
 
-    new_payment_status = status_resp.payment_status
-    new_status = status_resp.status
+    new_payment_status = session.payment_status  # "paid", "unpaid", "no_payment_required"
+    new_status = session.status  # "open", "complete", "expired"
 
     update = {"payment_status": new_payment_status, "status": new_status}
     await db.payment_transactions.update_one({"session_id": session_id}, {"$set": update})
@@ -708,28 +717,69 @@ async def checkout_status(session_id: str, http_request: Request):
 async def stripe_webhook(request: Request):
     body = await request.body()
     signature = request.headers.get("Stripe-Signature", "")
-    host_url = str(request.base_url)
-    webhook_url = f"{host_url}api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    stripe.api_key = STRIPE_API_KEY
+    webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+
     try:
-        evt = await stripe_checkout.handle_webhook(body, signature)
+        if webhook_secret:
+            event = stripe.Webhook.construct_event(body, signature, webhook_secret)
+        else:
+            event = stripe.Event.construct_from(
+                stripe.util.convert_to_stripe_object(
+                    stripe.util.json.loads(body)
+                ), stripe.api_key
+            )
     except Exception as e:
         logger.error(f"Webhook error: {e}")
         raise HTTPException(400, "Invalid webhook")
 
-    if evt.session_id:
-        tx = await db.payment_transactions.find_one({"session_id": evt.session_id}, {"_id": 0})
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        session_id = session["id"]
+        payment_status = session.get("payment_status", "paid")
+        tx = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
         if tx and tx.get("payment_status") != "paid":
             await db.payment_transactions.update_one(
-                {"session_id": evt.session_id},
-                {"$set": {"payment_status": evt.payment_status, "status": "complete"}},
+                {"session_id": session_id},
+                {"$set": {"payment_status": payment_status, "status": "complete"}},
             )
-            if evt.payment_status == "paid":
+            if payment_status == "paid":
                 await db.artworks.update_one(
                     {"id": tx["artwork_id"]}, {"$set": {"available": False}}
                 )
     return {"received": True}
 
+
+
+
+# ---------------- Contact ----------------
+class ContactMessage(BaseModel):
+    name: str
+    email: EmailStr
+    subject: Optional[str] = ""
+    message: str
+
+@api.post("/contact")
+async def send_contact(data: ContactMessage):
+    """Save contact message to DB and return success."""
+    msg = {
+        "id": str(uuid.uuid4()),
+        "name": data.name,
+        "email": data.email,
+        "subject": data.subject or "",
+        "message": data.message,
+        "read": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.contact_messages.insert_one(msg)
+    logger.info(f"Contact message from {data.email}")
+    return {"ok": True, "message": "Mensaje enviado correctamente."}
+
+@api.get("/contact/messages")
+async def get_messages(_: str = Depends(require_admin)):
+    """Admin only: list all contact messages."""
+    msgs = await db.contact_messages.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return msgs
 
 @api.get("/")
 async def root():
@@ -871,9 +921,13 @@ async def shutdown_db_client():
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse as _FileResponse
 
-_STATIC_DIR = ROOT_DIR.parent / "frontend" / "build"
+# In Docker: frontend build is copied to /app/static
+# In local dev: look for frontend/build relative to repo root
+_STATIC_DIR = ROOT_DIR / "static"
+if not _STATIC_DIR.exists():
+    _STATIC_DIR = ROOT_DIR.parent / "frontend" / "build"
 
-if _STATIC_DIR.exists():
+if _STATIC_DIR.exists() and (_STATIC_DIR / "static").exists():
     app.mount("/static", StaticFiles(directory=str(_STATIC_DIR / "static")), name="static-assets")
 
 @app.get("/{full_path:path}")
@@ -881,4 +935,4 @@ async def serve_frontend(full_path: str):
     _index = _STATIC_DIR / "index.html"
     if _index.exists():
         return _FileResponse(str(_index))
-    return {"status": "frontend not built"}
+    return {"status": "frontend not built", "looked_in": str(_STATIC_DIR)}

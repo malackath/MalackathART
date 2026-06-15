@@ -15,7 +15,7 @@ export const Footer = () => {
       style={{ borderColor: "var(--app-border)" }}
     >
       <div className="max-w-[1400px] mx-auto px-6 md:px-12 py-12 flex flex-col md:flex-row md:items-end md:justify-between gap-8">
-        <div>
+        <div className="flex flex-col gap-4">
           <div
             className="font-display font-black text-4xl md:text-5xl tracking-tighter leading-[0.9] uppercase"
             style={{ color: "var(--app-text)" }}
@@ -28,6 +28,13 @@ export const Footer = () => {
               </>
             )}
           </div>
+          {/* Firma del artista */}
+          <img
+            src="https://storage.googleapis.com/malackath-art-images/contact/firma.png"
+            alt="Firma Arnelli"
+            className="w-32 md:w-40 opacity-60"
+            style={{ filter: "var(--app-signature-filter, invert(1))" }}
+          />
         </div>
         <div
           className="flex flex-col gap-2 text-sm"

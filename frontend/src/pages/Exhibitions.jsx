@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import SEO from "../components/SEO";
 import { useLang } from "../contexts/LanguageContext";
 import { api } from "../lib/api";
 
@@ -11,14 +12,18 @@ export default function Exhibitions() {
   }, []);
 
   const formatDate = (iso) => {
+    if (!iso) return lang === "es" ? "A confirmar" : "TBC";
     const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso; // Return as-is if not a valid date
     return d.toLocaleDateString(lang === "es" ? "es-ES" : "en-US", {
       day: "2-digit", month: "short", year: "numeric",
     });
   };
 
   return (
-    <div data-testid="exhibitions-page" className="max-w-[1400px] mx-auto px-6 md:px-12 py-16 md:py-24">
+    <>
+    <SEO title="Exposiciones" description="Próximas y pasadas exposiciones de Bernardo Arnelli en galerías y museos internacionales." url="/exhibitions" />
+        <div data-testid="exhibitions-page" className="max-w-[1400px] mx-auto px-6 md:px-12 py-16 md:py-24">
       <header className="mb-16 md:mb-24 fade-up">
         <p
           className="text-xs tracking-[0.3em] uppercase font-medium mb-6"
@@ -94,5 +99,6 @@ export default function Exhibitions() {
         </div>
       )}
     </div>
+    </>
   );
 }

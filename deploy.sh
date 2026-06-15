@@ -1,7 +1,5 @@
 #!/bin/bash
 # deploy.sh — Deploy MalackathART a Google Cloud Run
-# Uso: bash deploy.sh
-
 set -e
 
 PROJECT_ID="malackath-art"
@@ -14,14 +12,16 @@ echo "🎨 Deploy MalackathART → Google Cloud Run"
 echo "==========================================="
 echo ""
 
-# 1. Build React frontend
+# 1. Build React frontend locally
 echo "📦 Construyendo el frontend..."
 cd frontend
 npm install --legacy-peer-deps
 npm run build
 cd ..
 
-# 2. Build y push imagen Docker con Cloud Build
+echo "✅ Frontend buildeado en frontend/build"
+
+# 2. Build y push imagen con Cloud Build
 echo ""
 echo "🐳 Construyendo imagen en Google Cloud..."
 gcloud builds submit \

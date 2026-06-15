@@ -68,6 +68,16 @@ export const Nav = () => {
           >
             {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
           </button>
+          <Link
+            to="/admin"
+            className="text-xs tracking-[0.2em] uppercase transition-colors border px-2.5 py-1.5 md:px-3"
+            style={{
+              color: "var(--app-gold)",
+              borderColor: "var(--app-gold)",
+            }}
+          >
+            ADMIN
+          </Link>
           <button
             data-testid="lang-toggle"
             onClick={toggle}

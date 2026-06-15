@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import RichTextEditor from "../../components/RichTextEditor";
 import { api } from "../../lib/api";
 import { useLang } from "../../contexts/LanguageContext";
 import { toast } from "sonner";
@@ -8,6 +9,8 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const empty = {
   name: "",
+  bio_hero_es: "",
+  bio_hero_en: "",
   bio_es: "",
   bio_en: "",
   portrait_url: "",
@@ -164,22 +167,28 @@ export default function ArtistEditor() {
               className="w-full bg-transparent border border-white/20 focus:border-white outline-none p-3 text-white"
             />
           </Field>
-          <Field label="Biografía (Español)">
-            <textarea
-              rows={6}
-              value={form.bio_es || ""}
-              onChange={(e) => update("bio_es", e.target.value)}
-              data-testid="artist-input-bio-es"
-              className="w-full bg-transparent border border-white/20 focus:border-white outline-none p-3 text-white text-sm leading-relaxed"
+          <Field label="Texto hero — sobre la foto (Español)">
+            <RichTextEditor
+              value={form.bio_hero_es || ""}
+              onChange={(html) => update("bio_hero_es", html)}
             />
           </Field>
-          <Field label="Biografía (English)">
-            <textarea
-              rows={6}
+          <Field label="Texto hero — sobre la foto (English)">
+            <RichTextEditor
+              value={form.bio_hero_en || ""}
+              onChange={(html) => update("bio_hero_en", html)}
+            />
+          </Field>
+          <Field label="Biografía completa (Español)">
+            <RichTextEditor
+              value={form.bio_es || ""}
+              onChange={(html) => update("bio_es", html)}
+            />
+          </Field>
+          <Field label="Biografía completa (English)">
+            <RichTextEditor
               value={form.bio_en || ""}
-              onChange={(e) => update("bio_en", e.target.value)}
-              data-testid="artist-input-bio-en"
-              className="w-full bg-transparent border border-white/20 focus:border-white outline-none p-3 text-white text-sm leading-relaxed"
+              onChange={(html) => update("bio_en", html)}
             />
           </Field>
         </div>

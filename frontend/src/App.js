@@ -1,5 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
+import ScrollToTop from "./components/ScrollToTop";
 import { Toaster } from "sonner";
 import "@/App.css";
 import Layout from "./components/Layout";
@@ -22,7 +24,9 @@ function App() {
       <ThemeProvider>
         <LanguageProvider>
           <AuthProvider>
-            <BrowserRouter>
+            <HelmetProvider>
+      <BrowserRouter>
+        <ScrollToTop />
               <Layout>
                 <Routes>
                   <Route path="/" element={<Home />} />
@@ -38,6 +42,7 @@ function App() {
               </Layout>
               <Toaster position="bottom-right" theme="system" />
             </BrowserRouter>
+      </HelmetProvider>
           </AuthProvider>
         </LanguageProvider>
       </ThemeProvider>

@@ -136,3 +136,63 @@ body {
   to { transform: translateX(-50%); }
 }
 .marquee-track { animation: marquee 40s linear infinite; }
+
+/* ── Works masonry ── */
+.works-masonry {
+  columns: 1;
+  column-gap: 2rem;
+}
+.works-masonry-item {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin-bottom: 3.5rem;
+  display: block;
+}
+@media (min-width: 640px) {
+  .works-masonry { columns: 2; column-gap: 2rem; }
+}
+@media (min-width: 1024px) {
+  .works-masonry { columns: 3; column-gap: 2.5rem; }
+  .works-masonry-item { margin-bottom: 4rem; }
+}
+@media (min-width: 1280px) {
+  .works-masonry { columns: 3; column-gap: 3rem; }
+}
+
+/* ── Rich Text Editor (TipTap) ── */
+.rich-editor .ProseMirror {
+  padding: 12px 14px;
+  min-height: 160px;
+  outline: none;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--app-text);
+}
+.rich-editor .ProseMirror p { margin: 0 0 0.75em; }
+.rich-editor .ProseMirror h2 { font-size: 1.4em; font-weight: 700; margin: 0.75em 0 0.4em; }
+.rich-editor .ProseMirror h3 { font-size: 1.2em; font-weight: 700; margin: 0.75em 0 0.4em; }
+.rich-editor .ProseMirror ul { padding-left: 1.5em; margin: 0.5em 0; }
+.rich-editor .ProseMirror li { margin-bottom: 0.25em; }
+.rich-editor .ProseMirror strong { font-weight: 700; }
+.rich-editor .ProseMirror em { font-style: italic; }
+.rich-editor .ProseMirror u { text-decoration: underline; }
+.rich-editor .ProseMirror s { text-decoration: line-through; }
+.rich-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--app-text-dim);
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
+/* ── Prose art — rich text rendered in public pages ── */
+.prose-art p { margin-bottom: 0.75em; }
+.prose-art p:last-child { margin-bottom: 0; }
+.prose-art strong { font-weight: 700; }
+.prose-art em { font-style: italic; }
+.prose-art u { text-decoration: underline; }
+.prose-art s { text-decoration: line-through; }
+.prose-art h2 { font-size: 1.3em; font-weight: 700; margin: 0.75em 0 0.4em; }
+.prose-art h3 { font-size: 1.1em; font-weight: 700; margin: 0.75em 0 0.4em; }
+.prose-art ul { padding-left: 1.5em; margin: 0.5em 0; list-style: disc; }
+.prose-art li { margin-bottom: 0.25em; }

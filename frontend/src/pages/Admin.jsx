@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import RichTextEditor from "../components/RichTextEditor";
 import { Navigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useLang } from "../contexts/LanguageContext";
@@ -435,11 +436,9 @@ export default function Admin() {
                       {isGallery ? "images (galería adicional)" : key}
                     </label>
                     {isLong ? (
-                      <textarea
-                        rows={3}
+                      <RichTextEditor
                         value={val || ""}
-                        onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                        className="w-full bg-transparent border border-white/20 focus:border-white outline-none p-3 text-white"
+                        onChange={(html) => setForm({ ...form, [key]: html })}
                       />
                     ) : isImage ? (
                       <ImageField

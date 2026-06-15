@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
+import SEO from "../components/SEO";
 import { Link } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
 import { api } from "../lib/api";
@@ -59,14 +60,18 @@ export default function Home() {
   const recent = artworks.slice(0, recentCount);
 
   const formatDate = (iso) => {
+    if (!iso) return lang === "es" ? "A confirmar" : "TBC";
     const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
     return d.toLocaleDateString(lang === "es" ? "es-ES" : "en-US", {
       day: "2-digit", month: "short", year: "numeric",
     });
   };
 
   return (
-    <div data-testid="home-page">
+    <>
+    <SEO url="/" />
+        <div data-testid="home-page">
       {/* HERO SLIDER */}
       <section className="relative w-full min-h-[88vh] md:min-h-[92vh] overflow-hidden flex items-center">
         {/* Stacked slides */}
@@ -188,11 +193,11 @@ export default function Home() {
         className="max-w-[1400px] mx-auto px-6 md:px-12 py-24 border-t"
         style={{ borderColor: "var(--app-border)" }}
       >
-        <div className="flex items-end justify-between mb-12">
+        <div className="flex flex-col mb-12">
           <Txt
             path="home.latestWorks"
             as="h2"
-            className="font-display font-bold tracking-tighter text-3xl md:text-5xl"
+            className="font-display font-bold tracking-tighter text-4xl md:text-5xl whitespace-nowrap"
             style={{ color: "var(--app-text)" }}
           >
             {t.home.latestWorks}
@@ -201,7 +206,7 @@ export default function Home() {
             <Link
               to="/works"
               data-testid="home-see-all-works"
-              className="text-xs tracking-[0.2em] uppercase font-medium border-b pb-1 hover:!text-[var(--app-text)]"
+              className="text-xs tracking-[0.2em] uppercase font-medium border-b pb-1 mt-3 self-start hover:!text-[var(--app-text)]"
               style={{ color: "var(--app-text-soft)", borderColor: "var(--app-border-bold)" }}
             >
               <Txt path="home.seeAll" as="span">{t.home.seeAll}</Txt>
@@ -243,11 +248,11 @@ export default function Home() {
         className="max-w-[1400px] mx-auto px-6 md:px-12 py-24 border-t"
         style={{ borderColor: "var(--app-border)" }}
       >
-        <div className="flex items-end justify-between mb-12">
+        <div className="flex flex-col mb-12">
           <Txt
             path="home.upcoming"
             as="h2"
-            className="font-display font-bold tracking-tighter text-3xl md:text-5xl"
+            className="font-display font-bold tracking-tighter text-4xl md:text-5xl whitespace-nowrap"
             style={{ color: "var(--app-text)" }}
           >
             {t.home.upcoming}
@@ -256,7 +261,7 @@ export default function Home() {
             <Link
               to="/exhibitions"
               data-testid="home-see-all-exh"
-              className="text-xs tracking-[0.2em] uppercase font-medium border-b pb-1 hover:!text-[var(--app-text)]"
+              className="text-xs tracking-[0.2em] uppercase font-medium border-b pb-1 mt-3 self-start hover:!text-[var(--app-text)]"
               style={{ color: "var(--app-text-soft)", borderColor: "var(--app-border-bold)" }}
             >
               <Txt path="home.seeAllExh" as="span">{t.home.seeAllExh}</Txt>
@@ -300,5 +305,6 @@ export default function Home() {
         </div>
       </section>
     </div>
+    </>
   );
 }
