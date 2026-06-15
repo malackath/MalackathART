@@ -181,11 +181,29 @@ export default function SettingsEditor() {
           Definí las series para agrupar las obras en el catálogo.
         </p>
 
-        {/* Lista de series */}
+        {/* Lista de series — draggable */}
         <div className="flex flex-col gap-2 mb-4">
           {(settings.series || []).map((s, i) => (
-            <div key={i} className="flex items-center justify-between border border-white/10 px-4 py-2">
-              <span className="text-sm text-white">{s}</span>
+            <div
+              key={i}
+              draggable
+              onDragStart={(e) => e.dataTransfer.setData("serieIdx", i)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                const from = parseInt(e.dataTransfer.getData("serieIdx"));
+                const to = i;
+                if (from === to) return;
+                const next = [...settings.series];
+                const [moved] = next.splice(from, 1);
+                next.splice(to, 0, moved);
+                setSettings({ ...settings, series: next });
+              }}
+              className="flex items-center justify-between border border-white/10 px-4 py-2 cursor-grab hover:border-white/30 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-white/20 select-none">⠿</span>
+                <span className="text-sm text-white">{s}</span>
+              </div>
               <button
                 onClick={() => {
                   const next = settings.series.filter((_, j) => j !== i);
