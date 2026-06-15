@@ -15,7 +15,16 @@ export const AuthProvider = ({ children }) => {
     }
     api
       .get("/auth/me")
-      .then((res) => setUser(res.data))
+      .then((res) => {
+        const data = res.data;
+        if (!data?.role) {
+          // Token viejo sin role — limpiar y forzar re-login
+          localStorage.removeItem("gallery_token");
+          setUser(null);
+        } else {
+          setUser(data);
+        }
+      })
       .catch(() => {
         localStorage.removeItem("gallery_token");
         setUser(null);
