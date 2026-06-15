@@ -87,6 +87,7 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     email: str
+    role: str = "admin"
 
 
 class Artwork(BaseModel):
@@ -842,19 +843,69 @@ async def send_contact(data: ContactMessage):
     return {"ok": True, "message": "Mensaje enviado correctamente."}
 
 @api.get("/contact/messages")
-async def get_messages(_: str = Depends(require_admin)):
-    """Admin only: list all contact messages."""
+async def get_messages(user: dict = Depends(require_admin)):
+    """Admin and mensajes role: list all contact messages."""
+    if user["role"] not in ["admin", "mensajes"]:
+        raise HTTPException(403, "Insufficient permissions")
     msgs = await db.contact_messages.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
     return msgs
 
 @api.put("/contact/messages/{message_id}/read")
-async def mark_message_read(message_id: str, _: str = Depends(require_admin)):
+async def mark_message_read(message_id: str, user: dict = Depends(require_admin)):
     """Mark a contact message as read."""
     await db.contact_messages.update_one(
         {"id": message_id},
         {"$set": {"read": True}}
     )
     return {"ok": True}
+
+# ---------------- User Management ----------------
+class UserCreate(BaseModel):
+    name: str
+    email: str
+    password: str
+    role: str = "editor"  # admin | editor | mensajes
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    password: Optional[str] = None
+    role: Optional[str] = None
+
+@api.get("/users")
+async def list_users(user: dict = Depends(require_admin)):
+    if user["role"] != "admin":
+        raise HTTPException(403, "Only admin can manage users")
+    users = await db.admins.find({}, {"_id": 0, "password_hash": 0}).to_list(100)
+    return users
+
+@api.post("/users")
+async def create_user(data: UserCreate, user: dict = Depends(require_admin)):
+    if user["role"] != "admin":
+        raise HTTPException(403, "Only admin can create users")
+    existing = await db.admins.find_one({"email": data.email})
+    if existing:
+        raise HTTPException(400, "User already exists")
+    hashed = bcrypt.hashpw(data.password.encode(), bcrypt.gensalt()).decode()
+    new_user = {
+        "id": str(uuid.uuid4()),
+        "name": data.name,
+        "email": data.email,
+        "password_hash": hashed,
+        "role": data.role,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.admins.insert_one(new_user)
+    return {"ok": True, "email": data.email, "role": data.role}
+
+@api.delete("/users/{email}")
+async def delete_user(email: str, user: dict = Depends(require_admin)):
+    if user["role"] != "admin":
+        raise HTTPException(403, "Only admin can delete users")
+    if email == user["email"]:
+        raise HTTPException(400, "Cannot delete yourself")
+    await db.admins.delete_one({"email": email})
+    return {"ok": True}
+
 
 # ---------------- Bulk series assignment ----------------
 class BulkSeriesUpdate(BaseModel):

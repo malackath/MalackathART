@@ -68,16 +68,22 @@ export const Nav = () => {
           >
             {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
           </button>
-          <Link
-            to="/admin"
-            className="text-xs tracking-[0.2em] uppercase transition-colors border px-2.5 py-1.5 md:px-3"
-            style={{
-              color: "var(--app-gold)",
-              borderColor: "var(--app-gold)",
-            }}
-          >
-            ADMIN
-          </Link>
+          <div className="relative group">
+            <button
+              className="text-xs tracking-[0.2em] uppercase transition-colors border px-2.5 py-1.5 md:px-3 flex items-center gap-1.5"
+              style={{ color: "var(--app-gold)", borderColor: "var(--app-gold)" }}
+            >
+              🔒
+            </button>
+            <div className="absolute right-0 top-full mt-1 hidden group-hover:flex flex-col z-50 min-w-[160px] border"
+              style={{ backgroundColor: "var(--app-bg)", borderColor: "var(--app-border)" }}>
+              <Link to="/admin"
+                className="px-4 py-2.5 text-xs tracking-[0.15em] uppercase hover:bg-white/5 transition-colors"
+                style={{ color: "var(--app-gold)" }}>
+                Panel admin
+              </Link>
+            </div>
+          </div>
           <button
             data-testid="lang-toggle"
             onClick={toggle}

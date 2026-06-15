@@ -9,6 +9,7 @@ import { Plus, Edit2, Trash2, X, Upload, GripVertical } from "lucide-react";
 import TextsEditor from "./admin/TextsEditor";
 import SettingsEditor from "./admin/SettingsEditor";
 import ArtistEditor from "./admin/ArtistEditor";
+import UsersPanel from "./admin/UsersPanel";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -188,7 +189,13 @@ const emptyExh = {
 export default function Admin() {
   const { user, logout, loading } = useAuth();
   const { t, siteName } = useLang();
-  const [tab, setTab] = useState("artworks");
+  const [tab, setTab] = useState(null);
+  useEffect(() => {
+    if (user && !tab) {
+      if (["admin","editor"].includes(user.role)) setTab("artworks");
+      else setTab("messages");
+    }
+  }, [user]);
   const [artworks, setArtworks] = useState([]);
   const [exhibitions, setExhibitions] = useState([]);
   const [editing, setEditing] = useState(null);
@@ -322,12 +329,19 @@ export default function Admin() {
       <div className="px-8 py-8">
         <div className="flex items-center gap-6 mb-8 border-b border-white/10 overflow-x-auto">
           {[
-            { id: "artworks", label: t.admin.artworks },
-            { id: "exhibitions", label: t.admin.exhibitions },
-            { id: "messages", label: unreadCount > 0 ? `Mensajes (${unreadCount})` : "Mensajes" },
-            { id: "artist", label: "Artista" },
-            { id: "texts", label: "Textos" },
-            { id: "settings", label: "Ajustes" },
+            ...(["admin","editor"].includes(user?.role) ? [
+              { id: "artworks", label: t.admin.artworks },
+              { id: "exhibitions", label: t.admin.exhibitions },
+              { id: "artist", label: "Artista" },
+              { id: "texts", label: "Textos" },
+              { id: "settings", label: "Ajustes" },
+            ] : []),
+            ...(["admin","mensajes"].includes(user?.role) ? [
+              { id: "messages", label: unreadCount > 0 ? `Mensajes (${unreadCount})` : "Mensajes" },
+            ] : []),
+            ...(user?.role === "admin" ? [
+              { id: "users", label: "Usuarios" },
+            ] : []),
           ].map((tk) => (
             <button
               key={tk.id}
@@ -357,6 +371,8 @@ export default function Admin() {
           <SettingsEditor />
         ) : tab === "artist" ? (
           <ArtistEditor />
+        ) : tab === "users" ? (
+          <UsersPanel />
         ) : tab === "messages" ? (
           <div className="space-y-4">
             {messages.length === 0 ? (
