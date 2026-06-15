@@ -893,6 +893,58 @@ async def delete_message(message_id: str, user: dict = Depends(require_admin)):
     return {"ok": True}
 
 
+class ReplyMessage(BaseModel):
+    body: str
+
+
+@api.post("/contact/messages/{message_id}/reply")
+async def reply_message(message_id: str, data: ReplyMessage, user: dict = Depends(require_admin)):
+    """Send an email reply to a contact message via Resend."""
+    RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+    REPLY_FROM_EMAIL = os.environ.get("REPLY_FROM_EMAIL", "contacto@arnelli.com")
+
+    if not RESEND_API_KEY:
+        raise HTTPException(500, "RESEND_API_KEY no configurada")
+
+    msg = await db.contact_messages.find_one({"id": message_id}, {"_id": 0})
+    if not msg:
+        raise HTTPException(404, "Mensaje no encontrado")
+
+    to_email = msg.get("email")
+    to_name = msg.get("name", "")
+    if not to_email:
+        raise HTTPException(400, "El mensaje no tiene email de destino")
+
+    try:
+        resp = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": f"Bernardo Arnelli <{REPLY_FROM_EMAIL}>",
+                "to": [to_email],
+                "subject": f"Re: Contacto desde arnelli.com",
+                "text": data.body,
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(f"Resend error: {e.response.text}")
+        raise HTTPException(502, f"Error al enviar: {e.response.text}")
+    except Exception as e:
+        logger.error(f"Reply error: {e}")
+        raise HTTPException(502, f"Error al enviar: {str(e)}")
+
+    await db.contact_messages.update_one(
+        {"id": message_id},
+        {"$set": {"replied": True, "replied_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"ok": True}
+
+
 # ---------------- User Management ----------------
 class UserCreate(BaseModel):
     name: str
