@@ -7,9 +7,18 @@ import { api } from "../lib/api";
 export default function Works() {
   const { t, pick } = useLang();
   const [artworks, setArtworks] = useState([]);
+  const [seriesOrder, setSeriesOrder] = useState([]);
 
   useEffect(() => {
     api.get("/artworks").then((r) => setArtworks(r.data)).catch(() => {});
+    api.get("/settings").then((r) => {
+      // series is now [{name, order}] sorted by order
+      const sorted = (r.data.series || [])
+        .slice()
+        .sort((a, b) => a.order - b.order)
+        .map((s) => s.name);
+      setSeriesOrder(sorted);
+    }).catch(() => {});
   }, []);
 
   // Group artworks by series
@@ -20,12 +29,17 @@ export default function Works() {
     return acc;
   }, {});
 
-  // Series with names first, then ungrouped
-  const seriesOrder = Object.keys(grouped).sort((a, b) => {
-    if (!a) return 1;
-    if (!b) return -1;
-    return 0;
-  });
+  // Build display order: series from settings first (in order), then any
+  // series found in artworks but not in settings, then ungrouped last
+  const knownSeries = seriesOrder.filter((name) => grouped[name]);
+  const extraSeries = Object.keys(grouped).filter(
+    (key) => key !== "" && !seriesOrder.includes(key)
+  );
+  const orderedSeries = [
+    ...knownSeries,
+    ...extraSeries,
+    ...(grouped[""] ? [""] : []),
+  ];
 
   return (
     <>
@@ -53,7 +67,7 @@ export default function Works() {
       </header>
 
       <div className="flex flex-col gap-20">
-        {seriesOrder.map((serie) => (
+        {orderedSeries.map((serie) => (
           <div key={serie || "__ungrouped__"}>
             {/* Serie header */}
             {serie && (

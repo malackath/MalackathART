@@ -188,12 +188,17 @@ class SiteTexts(BaseModel):
     en: Dict = Field(default_factory=dict)
 
 
+class SeriesItem(BaseModel):
+    name: str
+    order: int = 0
+
+
 class Settings(BaseModel):
     catalog_pdf_url: Optional[str] = None
     catalog_pdf_filename: Optional[str] = None
     featured_seconds: int = 5
     recent_works_count: int = 4
-    series: List[str] = []
+    series: List[SeriesItem] = []
 
 
 class TextStyles(BaseModel):
@@ -413,8 +418,8 @@ async def login(data: LoginRequest):
 
 
 @api.get("/auth/me")
-async def me(email: str = Depends(require_admin)):
-    return {"email": email}
+async def me(user: dict = Depends(require_admin)):
+    return {"email": user["email"], "role": user["role"]}
 
 
 # ---------------- Artist ----------------
@@ -462,6 +467,26 @@ async def update_settings(data: Settings, _=Depends(require_admin)):
         {"_id": "main"}, {"$set": data.model_dump()}, upsert=True
     )
     return data
+
+
+@api.delete("/settings/series/{series_name}")
+async def delete_series(series_name: str, _=Depends(require_admin)):
+    """Delete a series and unassign all artworks that belong to it."""
+    doc = await db.settings.find_one({"_id": "main"}, {"_id": 0})
+    if doc:
+        current = Settings(**(doc or {}))
+        new_series = [s for s in current.series if s.name != series_name]
+        await db.settings.update_one(
+            {"_id": "main"},
+            {"$set": {"series": [s.model_dump() for s in new_series]}},
+            upsert=True,
+        )
+    # Unassign artworks from this series
+    await db.artworks.update_many(
+        {"series": series_name},
+        {"$set": {"series": ""}}
+    )
+    return {"ok": True, "deleted": series_name}
 
 
 # ---------------- Text Styles ----------------
