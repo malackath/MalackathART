@@ -69,6 +69,7 @@ jobs:
             --set-env-vars "ADMIN_EMAIL=admin@malackath.art" \
             --set-env-vars "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}" \
             --set-env-vars "STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}" \
+            --set-env-vars "HUBSPOT_TOKEN=${{ secrets.HUBSPOT_TOKEN }}" \
             --project ${{ env.PROJECT_ID }}
 
       - name: Done

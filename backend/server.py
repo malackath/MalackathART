@@ -762,7 +762,7 @@ class ContactMessage(BaseModel):
     subject: Optional[str] = ""
     message: str
 
-HUBSPOT_TOKEN = "pat-na1-3384ccd8-ef0c-4b36-97b9-64c6072ac376"
+HUBSPOT_TOKEN = os.environ.get("HUBSPOT_TOKEN", "")
 
 async def sync_to_hubspot(name: str, email: str, subject: str, message: str):
     """Create or update a contact in HubSpot CRM."""
