@@ -189,13 +189,7 @@ const emptyExh = {
 export default function Admin() {
   const { user, logout, loading } = useAuth();
   const { t, siteName } = useLang();
-  const [tab, setTab] = useState(null);
-  useEffect(() => {
-    if (user && !tab) {
-      if (["admin","editor"].includes(user.role)) setTab("artworks");
-      else setTab("messages");
-    }
-  }, [user]);
+  const [tab, setTab] = useState("artworks");
   const [artworks, setArtworks] = useState([]);
   const [exhibitions, setExhibitions] = useState([]);
   const [editing, setEditing] = useState(null);
