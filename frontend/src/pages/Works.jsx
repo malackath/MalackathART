@@ -12,6 +12,21 @@ export default function Works() {
     api.get("/artworks").then((r) => setArtworks(r.data)).catch(() => {});
   }, []);
 
+  // Group artworks by series
+  const grouped = artworks.reduce((acc, a) => {
+    const key = a.series || "";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(a);
+    return acc;
+  }, {});
+
+  // Series with names first, then ungrouped
+  const seriesOrder = Object.keys(grouped).sort((a, b) => {
+    if (!a) return 1;
+    if (!b) return -1;
+    return 0;
+  });
+
   return (
     <>
     <SEO title="Obras" description="Catálogo completo de obras de Bernardo Arnelli. Acrílico, óleo y técnica mixta sobre lienzo y papel." url="/works" />
@@ -37,51 +52,72 @@ export default function Works() {
         </p>
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
-        {artworks.map((a, i) => (
-          <Link
-            key={a.id}
-            to={`/works/${a.id}`}
-            data-testid={`works-card-${a.id}`}
-            className="group block fade-up"
-            style={{ animationDelay: `${i * 60}ms` }}
-          >
-            <div
-              className="overflow-hidden aspect-[4/5]"
-              style={{ backgroundColor: "var(--app-overlay)" }}
-            >
-              <img
-                src={a.image_url}
-                alt={pick(a, "title")}
-                className="w-full h-full object-cover scale-110 group-hover:scale-[1.18] transition-transform duration-700"
-              />
-            </div>
-            <div className="mt-4 flex items-start justify-between gap-3">
-              <div>
-                <div
-                  className="font-display font-bold text-xl tracking-tight"
-                  style={{ color: "var(--app-text)" }}
+      <div className="flex flex-col gap-20">
+        {seriesOrder.map((serie) => (
+          <div key={serie || "__ungrouped__"}>
+            {/* Serie header */}
+            {serie && (
+              <div className="flex items-center gap-6 mb-10">
+                <div className="h-px flex-1" style={{ background: "var(--app-border)" }} />
+                <span
+                  className="text-xs tracking-[0.3em] uppercase font-medium flex-shrink-0"
+                  style={{ color: "var(--app-gold)" }}
                 >
-                  {pick(a, "title")}
-                </div>
-                <div
-                  className="text-sm mt-1 font-medium"
-                  style={{ color: "var(--app-text-soft)" }}
+                  {serie}
+                </span>
+                <div className="h-px flex-1" style={{ background: "var(--app-border)" }} />
+              </div>
+            )}
+
+            {/* Grid de obras de esta serie */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
+              {grouped[serie].map((a, i) => (
+                <Link
+                  key={a.id}
+                  to={`/works/${a.id}`}
+                  data-testid={`works-card-${a.id}`}
+                  className="group block fade-up"
+                  style={{ animationDelay: `${i * 60}ms` }}
                 >
-                  {a.year} · {pick(a, "technique")}
-                </div>
-              </div>
-              <div
-                className="text-[10px] tracking-[0.2em] uppercase font-bold px-2 py-1 border whitespace-nowrap"
-                style={{
-                  color: a.available ? "var(--app-text-soft)" : "var(--app-text-muted)",
-                  borderColor: a.available ? "var(--app-border-strong)" : "var(--app-border)",
-                }}
-              >
-                {a.available ? t.works.available : t.works.sold}
-              </div>
+                  <div
+                    className="overflow-hidden aspect-[4/5]"
+                    style={{ backgroundColor: "var(--app-overlay)" }}
+                  >
+                    <img
+                      src={a.image_url}
+                      alt={pick(a, "title")}
+                      className="w-full h-full object-cover scale-110 group-hover:scale-[1.18] transition-transform duration-700"
+                    />
+                  </div>
+                  <div className="mt-4 flex items-start justify-between gap-3">
+                    <div>
+                      <div
+                        className="font-display font-bold text-xl tracking-tight"
+                        style={{ color: "var(--app-text)" }}
+                      >
+                        {pick(a, "title")}
+                      </div>
+                      <div
+                        className="text-sm mt-1 font-medium"
+                        style={{ color: "var(--app-text-soft)" }}
+                      >
+                        {a.year} · {pick(a, "technique")}
+                      </div>
+                    </div>
+                    <div
+                      className="text-[10px] tracking-[0.2em] uppercase font-bold px-2 py-1 border whitespace-nowrap"
+                      style={{
+                        color: a.available ? "var(--app-text-soft)" : "var(--app-text-muted)",
+                        borderColor: a.available ? "var(--app-border-strong)" : "var(--app-border)",
+                      }}
+                    >
+                      {a.available ? t.works.available : t.works.sold}
+                    </div>
+                  </div>
+                </Link>
+              ))}
             </div>
-          </Link>
+          </div>
         ))}
       </div>
     </div>

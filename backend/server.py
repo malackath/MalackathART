@@ -106,6 +106,7 @@ class Artwork(BaseModel):
     available: bool = True
     featured: bool = False
     order: int = 0
+    series: Optional[str] = ""
     is_seed: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -126,6 +127,7 @@ class ArtworkInput(BaseModel):
     available: bool = True
     featured: bool = False
     order: int = 0
+    series: Optional[str] = ""
 
 
 class ReorderItem(BaseModel):
