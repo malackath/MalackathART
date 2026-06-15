@@ -196,16 +196,37 @@ export default function Admin() {
   // Drag and drop reordering for artworks (must be declared before any early return)
   const [dragIdx, setDragIdx] = useState(null);
   const [hoverIdx, setHoverIdx] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [availableSeries, setAvailableSeries] = useState([]);
+  const [bulkSerie, setBulkSerie] = useState("");
+  const [applyingBulk, setApplyingBulk] = useState(false);
 
   const load = () => {
     api.get("/artworks").then((r) => setArtworks(r.data));
     api.get("/exhibitions").then((r) => setExhibitions(r.data));
+    api.get("/settings").then((r) => setAvailableSeries(r.data?.series || []));
   };
 
   useEffect(() => { if (user) load(); }, [user]);
 
   if (loading) return <div className="p-12 text-white/50">···</div>;
   if (!user) return <Navigate to="/admin/login" replace />;
+
+  const applyBulkSerie = async () => {
+    if (!bulkSerie || selectedIds.length === 0) return;
+    setApplyingBulk(true);
+    try {
+      await api.post("/artworks/bulk-series", { artwork_ids: selectedIds, series: bulkSerie });
+      toast.success(`Serie "${bulkSerie}" aplicada a ${selectedIds.length} obras`);
+      setSelectedIds([]);
+      setBulkSerie("");
+      load();
+    } catch (e) {
+      toast.error("Error: " + (e.response?.data?.detail || e.message));
+    } finally {
+      setApplyingBulk(false);
+    }
+  };
 
   const startNew = () => {
     setEditing("new");
@@ -330,16 +351,54 @@ export default function Admin() {
         ) : tab === "artist" ? (
           <ArtistEditor />
         ) : tab === "artworks" ? (
+          <div>
+            {/* Bulk series toolbar */}
+            {selectedIds.length > 0 && (
+              <div className="flex items-center gap-3 mb-4 p-3 border border-[#B8860B]/40 bg-[#B8860B]/10">
+                <span className="text-xs text-white/70">{selectedIds.length} obras seleccionadas</span>
+                <select
+                  value={bulkSerie}
+                  onChange={(e) => setBulkSerie(e.target.value)}
+                  className="bg-black border border-white/20 text-white text-xs px-3 py-2 outline-none flex-1 max-w-xs"
+                >
+                  <option value="">— Asignar serie —</option>
+                  <option value="">Sin serie</option>
+                  {availableSeries.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={applyBulkSerie}
+                  disabled={!bulkSerie && bulkSerie !== "" || applyingBulk}
+                  className="px-4 py-2 bg-[#B8860B] text-black text-xs font-bold tracking-[0.15em] uppercase disabled:opacity-40"
+                >
+                  {applyingBulk ? "Aplicando..." : "Aplicar"}
+                </button>
+                <button
+                  onClick={() => setSelectedIds([])}
+                  className="text-white/40 hover:text-white text-xs"
+                >
+                  Cancelar
+                </button>
+              </div>
+            )}
           <table className="w-full text-sm">
             <thead className="text-left text-xs tracking-[0.2em] uppercase text-white/40 border-b border-white/10">
               <tr>
-                <th className="py-3 w-8"></th>
+                <th className="py-3 w-8">
+                  <input type="checkbox"
+                    checked={selectedIds.length === artworks.length && artworks.length > 0}
+                    onChange={(e) => setSelectedIds(e.target.checked ? artworks.map(a => a.id) : [])}
+                    className="accent-[#B8860B]"
+                  />
+                </th>
                 <th className="w-20">Img</th>
                 <th>Title</th>
                 <th>Year</th>
                 <th>Technique</th>
                 <th>Price</th>
                 <th>Status</th>
+                <th>Serie</th>
                 <th></th>
               </tr>
             </thead>
@@ -355,7 +414,7 @@ export default function Admin() {
                   onDrop={handleDrop}
                   className={`border-b border-white/5 transition-colors ${
                     hoverIdx === idx && dragIdx !== null && dragIdx !== idx ? "bg-white/10" : ""
-                  } ${dragIdx === idx ? "opacity-40" : ""}`}
+                  } ${dragIdx === idx ? "opacity-40" : ""} ${selectedIds.includes(a.id) ? "bg-[#B8860B]/10" : ""}`}
                 >
                   <td className="py-3 cursor-grab text-white/30 hover:text-white/70" data-testid={`drag-handle-${a.id}`}>
                     <GripVertical size={16} />
@@ -374,6 +433,7 @@ export default function Admin() {
               ))}
             </tbody>
           </table>
+          </div>
         ) : (
           <table className="w-full text-sm">
             <thead className="text-left text-xs tracking-[0.2em] uppercase text-white/40 border-b border-white/10">

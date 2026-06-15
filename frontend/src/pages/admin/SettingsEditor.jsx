@@ -12,7 +12,9 @@ export default function SettingsEditor() {
     catalog_pdf_filename: null,
     featured_seconds: 5,
     recent_works_count: 4,
+    series: [],
   });
+  const [newSerie, setNewSerie] = useState("");
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -23,6 +25,7 @@ export default function SettingsEditor() {
       catalog_pdf_filename: r.data?.catalog_pdf_filename || null,
       featured_seconds: r.data?.featured_seconds || 5,
       recent_works_count: r.data?.recent_works_count || 4,
+      series: r.data?.series || [],
     }));
   };
 
@@ -158,6 +161,70 @@ export default function SettingsEditor() {
               Cantidad de obras en la sección "Obras recientes" de la home.
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Series / Colecciones */}
+      <div className="pt-8 border-t border-white/10">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-display font-bold text-2xl tracking-tight">Series y colecciones</h3>
+          <button
+            onClick={saveSettings}
+            disabled={saving}
+            className="inline-flex items-center gap-2 px-5 py-2 bg-[#B8860B] hover:bg-[#D4A017] text-black font-bold tracking-[0.15em] uppercase text-xs disabled:opacity-40 transition-colors"
+          >
+            <Save size={14} />
+            {saving ? "Guardando..." : "Guardar"}
+          </button>
+        </div>
+        <p className="text-sm text-white/60 mb-6 leading-relaxed">
+          Definí las series para agrupar las obras en el catálogo.
+        </p>
+
+        {/* Lista de series */}
+        <div className="flex flex-col gap-2 mb-4">
+          {(settings.series || []).map((s, i) => (
+            <div key={i} className="flex items-center justify-between border border-white/10 px-4 py-2">
+              <span className="text-sm text-white">{s}</span>
+              <button
+                onClick={() => {
+                  const next = settings.series.filter((_, j) => j !== i);
+                  setSettings({ ...settings, series: next });
+                }}
+                className="text-white/40 hover:text-red-400 transition-colors ml-4"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Agregar nueva serie */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newSerie}
+            onChange={(e) => setNewSerie(e.target.value)}
+            placeholder="Nueva serie..."
+            className="flex-1 bg-transparent border border-white/20 focus:border-white outline-none px-3 py-2 text-white text-sm"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && newSerie.trim()) {
+                setSettings({ ...settings, series: [...(settings.series || []), newSerie.trim()] });
+                setNewSerie("");
+              }
+            }}
+          />
+          <button
+            onClick={() => {
+              if (newSerie.trim()) {
+                setSettings({ ...settings, series: [...(settings.series || []), newSerie.trim()] });
+                setNewSerie("");
+              }
+            }}
+            className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm transition-colors"
+          >
+            + Agregar
+          </button>
         </div>
       </div>
 

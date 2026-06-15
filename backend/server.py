@@ -783,6 +783,20 @@ async def get_messages(_: str = Depends(require_admin)):
     msgs = await db.contact_messages.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
     return msgs
 
+# ---------------- Bulk series assignment ----------------
+class BulkSeriesUpdate(BaseModel):
+    artwork_ids: List[str]
+    series: str
+
+@api.post("/artworks/bulk-series")
+async def bulk_update_series(data: BulkSeriesUpdate, _: str = Depends(require_admin)):
+    await db.artworks.update_many(
+        {"id": {"$in": data.artwork_ids}},
+        {"$set": {"series": data.series}}
+    )
+    return {"ok": True, "updated": len(data.artwork_ids)}
+
+
 @api.get("/")
 async def root():
     return {"message": "Gallery API"}
