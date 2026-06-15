@@ -206,6 +206,33 @@ export default function Admin() {
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [sendingReply, setSendingReply] = useState(false);
+  const [selectedMsgIds, setSelectedMsgIds] = useState([]);
+  const [deletingMsgs, setDeletingMsgs] = useState(false);
+
+  const toggleMsgSelect = (id) => {
+    setSelectedMsgIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const selectAllRead = () => {
+    setSelectedMsgIds(messages.filter((m) => m.read).map((m) => m.id));
+  };
+
+  const deleteSelectedMsgs = async () => {
+    if (!window.confirm(`¿Eliminar ${selectedMsgIds.length} mensaje(s)?`)) return;
+    setDeletingMsgs(true);
+    try {
+      await Promise.all(selectedMsgIds.map((id) => api.delete(`/contact/messages/${id}`)));
+      toast.success(`${selectedMsgIds.length} mensaje(s) eliminado(s)`);
+      setSelectedMsgIds([]);
+      load();
+    } catch (e) {
+      toast.error("Error al eliminar: " + (e.response?.data?.detail || e.message));
+    } finally {
+      setDeletingMsgs(false);
+    }
+  };
 
   const sendReply = async (m) => {
     if (!replyText.trim()) return;
@@ -388,16 +415,53 @@ export default function Admin() {
           <UsersPanel />
         ) : tab === "messages" ? (
           <div className="space-y-4">
+            {/* Toolbar */}
+            {messages.length > 0 && (
+              <div className="flex items-center gap-3 pb-3 border-b border-white/10">
+                <button
+                  onClick={selectAllRead}
+                  className="text-xs text-white/50 hover:text-white border border-white/20 px-3 py-1.5 transition-colors"
+                >
+                  Seleccionar leídos
+                </button>
+                {selectedMsgIds.length > 0 && (
+                  <>
+                    <span className="text-xs text-white/40">{selectedMsgIds.length} seleccionado(s)</span>
+                    <button
+                      onClick={deleteSelectedMsgs}
+                      disabled={deletingMsgs}
+                      className="text-xs bg-red-600 text-white font-bold px-3 py-1.5 hover:bg-red-500 transition-colors disabled:opacity-40 flex items-center gap-1"
+                    >
+                      <Trash2 size={12} />
+                      {deletingMsgs ? "Eliminando..." : "Eliminar seleccionados"}
+                    </button>
+                    <button
+                      onClick={() => setSelectedMsgIds([])}
+                      className="text-xs text-white/40 hover:text-white transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
             {messages.length === 0 ? (
               <div className="py-16 text-center text-white/40 text-sm">No hay mensajes aún.</div>
             ) : (
               messages.map((m) => (
                 <div
                   key={m.id}
-                  className={`border p-5 transition-colors ${m.read ? "border-white/10 bg-white/[0.02]" : "border-[#B8860B]/40 bg-[#B8860B]/5"}`}
+                  className={`border p-5 transition-colors ${selectedMsgIds.includes(m.id) ? "border-red-500/40 bg-red-500/5" : m.read ? "border-white/10 bg-white/[0.02]" : "border-[#B8860B]/40 bg-[#B8860B]/5"}`}
                 >
                   <div className="flex items-start justify-between gap-4 mb-3">
-                    <div>
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedMsgIds.includes(m.id)}
+                        onChange={() => toggleMsgSelect(m.id)}
+                        className="mt-1 accent-red-500 w-4 h-4 flex-shrink-0"
+                      />
+                      <div>
                       <div className="flex items-center gap-3">
                         {!m.read && <span className="w-2 h-2 rounded-full bg-[#B8860B] flex-shrink-0" />}
                         <span className="font-bold text-white">{m.name}</span>
@@ -406,6 +470,7 @@ export default function Admin() {
                       {m.subject && (
                         <div className="text-xs tracking-[0.15em] uppercase text-[#B8860B] mt-1">{m.subject}</div>
                       )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0">
                       <span className="text-xs text-white/40">
