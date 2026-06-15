@@ -416,6 +416,17 @@ export default function Admin() {
                     hoverIdx === idx && dragIdx !== null && dragIdx !== idx ? "bg-white/10" : ""
                   } ${dragIdx === idx ? "opacity-40" : ""} ${selectedIds.includes(a.id) ? "bg-[#B8860B]/10" : ""}`}
                 >
+                  <td className="py-2 w-8">
+                    <input type="checkbox"
+                      checked={selectedIds.includes(a.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) setSelectedIds([...selectedIds, a.id]);
+                        else setSelectedIds(selectedIds.filter(id => id !== a.id));
+                      }}
+                      className="accent-[#B8860B] w-4 h-4"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </td>
                   <td className="py-3 cursor-grab text-white/30 hover:text-white/70" data-testid={`drag-handle-${a.id}`}>
                     <GripVertical size={16} />
                   </td>
