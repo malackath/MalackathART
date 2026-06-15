@@ -201,9 +201,10 @@ class TextStyles(BaseModel):
 
 
 # ---------------- Auth helpers ----------------
-def create_token(email: str) -> str:
+def create_token(email: str, role: str = "admin") -> str:
     payload = {
         "sub": email,
+        "role": role,
         "exp": datetime.now(timezone.utc) + timedelta(hours=JWT_EXP_HOURS),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
@@ -408,13 +409,13 @@ async def login(data: LoginRequest):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if not bcrypt.checkpw(data.password.encode(), admin["password_hash"].encode()):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    token = create_token(data.email)
-    return TokenResponse(access_token=token, email=data.email)
+    token = create_token(data.email, role=admin.get("role", "admin"))
+    return TokenResponse(access_token=token, email=data.email, role=admin.get("role", "admin"))
 
 
 @api.get("/auth/me")
-async def me(email: str = Depends(require_admin)):
-    return {"email": email}
+async def me(user: dict = Depends(require_admin)):
+    return {"email": user["email"], "role": user["role"]}
 
 
 # ---------------- Artist ----------------
