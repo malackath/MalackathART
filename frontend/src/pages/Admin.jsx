@@ -324,6 +324,7 @@ export default function Admin() {
           {[
             { id: "artworks", label: t.admin.artworks },
             { id: "exhibitions", label: t.admin.exhibitions },
+            { id: "messages", label: unreadCount > 0 ? `Mensajes (${unreadCount})` : "Mensajes" },
             { id: "artist", label: "Artista" },
             { id: "texts", label: "Textos" },
             { id: "settings", label: "Ajustes" },
