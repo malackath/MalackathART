@@ -192,6 +192,7 @@ class Settings(BaseModel):
     catalog_pdf_filename: Optional[str] = None
     featured_seconds: int = 5
     recent_works_count: int = 4
+    series: List[str] = []
 
 
 class TextStyles(BaseModel):
