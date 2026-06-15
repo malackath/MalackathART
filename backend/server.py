@@ -1077,3 +1077,4 @@ async def serve_frontend(full_path: str):
     if _index.exists():
         return _FileResponse(str(_index))
     return {"status": "frontend not built", "looked_in": str(_STATIC_DIR)}
+echo "# updated" >> ~/Desktop/MalackathART/backend/server.py
