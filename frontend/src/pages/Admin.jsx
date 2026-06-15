@@ -208,6 +208,27 @@ export default function Admin() {
   const [sendingReply, setSendingReply] = useState(false);
   const [selectedMsgIds, setSelectedMsgIds] = useState([]);
   const [deletingMsgs, setDeletingMsgs] = useState(false);
+  const [translating, setTranslating] = useState(false);
+  const [translateProgress, setTranslateProgress] = useState({ done: 0, total: 0 });
+
+  const translateAll = async () => {
+    if (!window.confirm(`¿Traducir al inglés las ${artworks.length} obras? Esto puede tardar unos minutos.`)) return;
+    setTranslating(true);
+    setTranslateProgress({ done: 0, total: artworks.length });
+    let ok = 0;
+    for (const a of artworks) {
+      try {
+        await api.post(`/artworks/${a.id}/translate`);
+        ok++;
+      } catch (e) {
+        // continue with next
+      }
+      setTranslateProgress({ done: ok, total: artworks.length });
+    }
+    toast.success(`${ok} obras traducidas al inglés`);
+    setTranslating(false);
+    load();
+  };
 
   const toggleMsgSelect = (id) => {
     setSelectedMsgIds((prev) =>
@@ -395,13 +416,26 @@ export default function Admin() {
             </button>
           ))}
           {(tab === "artworks" || tab === "exhibitions") && (
-            <button
-              data-testid="admin-add"
-              onClick={startNew}
-              className="ml-auto inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase border border-white/30 px-3 py-2 hover:bg-white hover:text-black transition-colors mb-2"
-            >
-              <Plus size={14} /> {t.admin.add}
-            </button>
+            <div className="ml-auto flex items-center gap-2 mb-2">
+              {tab === "artworks" && (
+                <button
+                  onClick={translateAll}
+                  disabled={translating}
+                  className="inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase border border-white/20 px-3 py-2 hover:bg-white/10 transition-colors disabled:opacity-50 text-white/60"
+                >
+                  {translating
+                    ? `Traduciendo ${translateProgress.done}/${translateProgress.total}...`
+                    : "Traducir todas al inglés"}
+                </button>
+              )}
+              <button
+                data-testid="admin-add"
+                onClick={startNew}
+                className="inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase border border-white/30 px-3 py-2 hover:bg-white hover:text-black transition-colors"
+              >
+                <Plus size={14} /> {t.admin.add}
+              </button>
+            </div>
           )}
         </div>
 

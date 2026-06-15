@@ -566,7 +566,9 @@ async def create_artwork(data: ArtworkInput, _=Depends(require_admin)):
     real_count = await db.artworks.count_documents({"is_seed": {"$ne": True}})
     if real_count == 0:
         await db.artworks.delete_many({"is_seed": True})
-    obj = Artwork(**data.model_dump(), is_seed=False)
+    dumped = data.model_dump()
+    dumped = auto_translate(dumped)
+    obj = Artwork(**dumped, is_seed=False)
     doc = obj.model_dump()
     doc["created_at"] = doc["created_at"].isoformat()
     await db.artworks.insert_one(doc)
@@ -587,7 +589,9 @@ async def reorder_exhibitions(items: List[ReorderItem], _=Depends(require_admin)
 
 @api.put("/artworks/{artwork_id}", response_model=Artwork)
 async def update_artwork(artwork_id: str, data: ArtworkInput, _=Depends(require_admin)):
-    result = await db.artworks.update_one({"id": artwork_id}, {"$set": data.model_dump()})
+    dumped = data.model_dump()
+    dumped = auto_translate(dumped)
+    result = await db.artworks.update_one({"id": artwork_id}, {"$set": dumped})
     if result.matched_count == 0:
         raise HTTPException(404, "Artwork not found")
     doc = await db.artworks.find_one({"id": artwork_id}, {"_id": 0})
@@ -953,6 +957,89 @@ async def bulk_update_series(data: BulkSeriesUpdate, _=Depends(require_admin)):
         {"$set": {"series": data.series}}
     )
     return {"ok": True, "updated": len(data.artwork_ids)}
+
+
+# ---------------- Auto-translation ----------------
+ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+
+def translate_with_claude(text_es: str, field: str) -> str:
+    """Translate Spanish text to English using Claude API."""
+    if not text_es or not text_es.strip():
+        return ""
+    if not ANTHROPIC_API_KEY:
+        logger.warning("ANTHROPIC_API_KEY not set, skipping translation")
+        return ""
+
+    if field == "description":
+        prompt = (
+            "Translate the following Spanish artwork description to English. "
+            "Preserve the literary, poetic tone. Keep any HTML tags exactly as they are. "
+            "Return only the translated text, nothing else.\n\n"
+            f"{text_es}"
+        )
+    elif field == "technique":
+        prompt = (
+            "Translate this Spanish art technique name to English. "
+            "Return only the translation, nothing else.\n\n"
+            f"{text_es}"
+        )
+    else:  # title
+        prompt = (
+            "Translate this Spanish artwork title to English. "
+            "Keep it poetic and concise. Return only the translation, nothing else.\n\n"
+            f"{text_es}"
+        )
+
+    try:
+        resp = requests.post(
+            ANTHROPIC_API_URL,
+            headers={
+                "x-api-key": ANTHROPIC_API_KEY,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": "claude-haiku-4-5-20251001",
+                "max_tokens": 1024,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        return resp.json()["content"][0]["text"].strip()
+    except Exception as e:
+        logger.error(f"Translation failed for field={field}: {e}")
+        return ""
+
+
+def auto_translate(data: dict) -> dict:
+    """Fill in missing _en fields by translating from Spanish."""
+    if not data.get("title_en") and data.get("title"):
+        data["title_en"] = translate_with_claude(data["title"], "title")
+    if not data.get("technique_en") and data.get("technique"):
+        data["technique_en"] = translate_with_claude(data["technique"], "technique")
+    if not data.get("description_en") and data.get("description"):
+        data["description_en"] = translate_with_claude(data["description"], "description")
+    return data
+
+
+@api.post("/artworks/{artwork_id}/translate")
+async def translate_artwork(artwork_id: str, _=Depends(require_admin)):
+    """Force-translate all _en fields for a given artwork, overwriting existing values."""
+    doc = await db.artworks.find_one({"id": artwork_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(404, "Artwork not found")
+    updates = {}
+    if doc.get("title"):
+        updates["title_en"] = translate_with_claude(doc["title"], "title")
+    if doc.get("technique"):
+        updates["technique_en"] = translate_with_claude(doc["technique"], "technique")
+    if doc.get("description"):
+        updates["description_en"] = translate_with_claude(doc["description"], "description")
+    if updates:
+        await db.artworks.update_one({"id": artwork_id}, {"$set": updates})
+    return {"ok": True, "artwork_id": artwork_id, "translated": list(updates.keys())}
 
 
 @api.get("/")
