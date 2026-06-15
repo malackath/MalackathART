@@ -201,10 +201,9 @@ class TextStyles(BaseModel):
 
 
 # ---------------- Auth helpers ----------------
-def create_token(email: str, role: str = "admin") -> str:
+def create_token(email: str) -> str:
     payload = {
         "sub": email,
-        "role": role,
         "exp": datetime.now(timezone.utc) + timedelta(hours=JWT_EXP_HOURS),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
@@ -409,13 +408,13 @@ async def login(data: LoginRequest):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if not bcrypt.checkpw(data.password.encode(), admin["password_hash"].encode()):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    token = create_token(data.email, role=admin.get("role", "admin"))
-    return TokenResponse(access_token=token, email=data.email, role=admin.get("role", "admin"))
+    token = create_token(data.email)
+    return TokenResponse(access_token=token, email=data.email)
 
 
 @api.get("/auth/me")
-async def me(user: dict = Depends(require_admin)):
-    return {"email": user["email"], "role": user["role"]}
+async def me(email: str = Depends(require_admin)):
+    return {"email": email}
 
 
 # ---------------- Artist ----------------
@@ -765,7 +764,8 @@ class ContactMessage(BaseModel):
     subject: Optional[str] = ""
     message: str
 
-HUBSPOT_TOKEN = os.environ.get("HUBSPOT_TOKEN", "")
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+REPLY_FROM_EMAIL = os.environ.get("REPLY_FROM_EMAIL", "contacto@arnelli.com")
 
 async def sync_to_hubspot(name: str, email: str, subject: str, message: str):
     """Create or update a contact in HubSpot CRM."""
@@ -858,6 +858,53 @@ async def mark_message_read(message_id: str, user: dict = Depends(require_admin)
     await db.contact_messages.update_one(
         {"id": message_id},
         {"$set": {"read": True}}
+    )
+    return {"ok": True}
+
+
+class ReplyRequest(BaseModel):
+    body: str
+
+
+@api.post("/contact/messages/{message_id}/reply")
+async def reply_to_message(message_id: str, data: ReplyRequest, user: dict = Depends(require_admin)):
+    """Send an email reply to a contact message via Resend."""
+    if not RESEND_API_KEY:
+        raise HTTPException(500, "Resend API key not configured")
+
+    msg = await db.contact_messages.find_one({"id": message_id}, {"_id": 0})
+    if not msg:
+        raise HTTPException(404, "Mensaje no encontrado")
+
+    subject = f"Re: {msg.get('subject', 'Consulta')}" if msg.get('subject') else "Re: Tu mensaje a Bernardo Arnelli"
+
+    try:
+        resp = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": f"Bernardo Arnelli <{REPLY_FROM_EMAIL}>",
+                "to": [msg["email"]],
+                "subject": subject,
+                "text": data.body,
+                "html": data.body.replace("\n", "<br>"),
+            },
+            timeout=15,
+        )
+        if resp.status_code not in (200, 201):
+            logger.error(f"Resend error: {resp.status_code} {resp.text}")
+            raise HTTPException(500, f"Error al enviar: {resp.json().get('message', resp.text)}")
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Resend request failed: {e}")
+        raise HTTPException(500, "Error de conexión con Resend")
+
+    # Mark as read and record reply
+    await db.contact_messages.update_one(
+        {"id": message_id},
+        {"$set": {"read": True, "replied_at": datetime.now(timezone.utc).isoformat(), "replied_by": user["email"]}}
     )
     return {"ok": True}
 

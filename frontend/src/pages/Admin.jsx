@@ -203,6 +203,25 @@ export default function Admin() {
   const [applyingBulk, setApplyingBulk] = useState(false);
   const [messages, setMessages] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [replyText, setReplyText] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
+
+  const sendReply = async (m) => {
+    if (!replyText.trim()) return;
+    setSendingReply(true);
+    try {
+      await api.post(`/contact/messages/${m.id}/reply`, { body: replyText });
+      toast.success(`Respuesta enviada a ${m.email}`);
+      setReplyingTo(null);
+      setReplyText("");
+      load();
+    } catch (e) {
+      toast.error("Error al enviar: " + (e.response?.data?.detail || e.message));
+    } finally {
+      setSendingReply(false);
+    }
+  };
 
   const load = () => {
     api.get("/artworks").then((r) => setArtworks(r.data));
@@ -403,15 +422,47 @@ export default function Admin() {
                           Marcar leído
                         </button>
                       )}
-                      <a
-                        href={`mailto:${m.email}?subject=Re: ${m.subject || "Consulta"}`}
+                      <button
+                        onClick={() => {
+                          setReplyingTo(replyingTo === m.id ? null : m.id);
+                          setReplyText("");
+                        }}
                         className="text-xs bg-[#B8860B] text-black font-bold px-3 py-1 hover:bg-[#D4A017] transition-colors"
                       >
-                        Responder
-                      </a>
+                        {replyingTo === m.id ? "Cancelar" : "Responder"}
+                      </button>
                     </div>
                   </div>
                   <p className="text-sm text-white/70 leading-relaxed whitespace-pre-wrap">{m.message}</p>
+                  {replyingTo === m.id && (
+                    <div className="mt-4 border-t border-white/10 pt-4 space-y-3">
+                      <div className="text-xs text-white/40 tracking-[0.15em] uppercase">
+                        Respondiendo a {m.email}
+                      </div>
+                      <textarea
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        placeholder="Escribí tu respuesta..."
+                        rows={5}
+                        className="w-full bg-black border border-white/20 focus:border-white/60 outline-none p-3 text-white text-sm resize-none"
+                      />
+                      <div className="flex justify-end gap-3">
+                        <button
+                          onClick={() => { setReplyingTo(null); setReplyText(""); }}
+                          className="text-xs text-white/40 hover:text-white px-4 py-2 border border-white/20 transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          onClick={() => sendReply(m)}
+                          disabled={sendingReply || !replyText.trim()}
+                          className="text-xs bg-white text-black font-bold px-4 py-2 hover:bg-white/80 transition-colors disabled:opacity-40"
+                        >
+                          {sendingReply ? "Enviando..." : "Enviar respuesta"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))
             )}
