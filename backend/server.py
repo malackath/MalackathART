@@ -766,23 +766,25 @@ HUBSPOT_TOKEN = os.environ.get("HUBSPOT_TOKEN", "")
 
 async def sync_to_hubspot(name: str, email: str, subject: str, message: str):
     """Create or update a contact in HubSpot CRM."""
+    if not HUBSPOT_TOKEN:
+        return
     try:
         first = name.split()[0] if name else ""
         last = " ".join(name.split()[1:]) if len(name.split()) > 1 else ""
-        note = f"Motivo: {subject}\n\n{message}" if subject else message
 
         headers = {
             "Authorization": f"Bearer {HUBSPOT_TOKEN}",
             "Content-Type": "application/json",
         }
 
-        # Create or update contact
+        # Build contact properties including the message as a custom note field
         contact_payload = {
             "properties": {
                 "email": email,
                 "firstname": first,
                 "lastname": last,
                 "hs_lead_status": "NEW",
+                "message": f"Motivo: {subject}\n\n{message}" if subject else message,
             }
         }
         resp = requests.post(
@@ -792,12 +794,10 @@ async def sync_to_hubspot(name: str, email: str, subject: str, message: str):
             timeout=10,
         )
 
-        # If contact already exists (409), update it
-        contact_id = None
         if resp.status_code == 201:
-            contact_id = resp.json().get("id")
+            logger.info(f"HubSpot contact created for {email}")
         elif resp.status_code == 409:
-            # Get existing contact id
+            # Contact exists — update message property
             search = requests.post(
                 "https://api.hubapi.com/crm/v3/objects/contacts/search",
                 json={"filterGroups": [{"filters": [{"propertyName": "email", "operator": "EQ", "value": email}]}]},
@@ -805,27 +805,15 @@ async def sync_to_hubspot(name: str, email: str, subject: str, message: str):
             )
             if search.status_code == 200 and search.json().get("results"):
                 contact_id = search.json()["results"][0]["id"]
+                requests.patch(
+                    f"https://api.hubapi.com/crm/v3/objects/contacts/{contact_id}",
+                    json={"properties": {"message": contact_payload["properties"]["message"]}},
+                    headers=headers, timeout=10
+                )
+                logger.info(f"HubSpot contact updated for {email}")
+        else:
+            logger.warning(f"HubSpot unexpected status {resp.status_code} for {email}: {resp.text}")
 
-        # Add note with the message
-        if contact_id and note:
-            note_payload = {
-                "properties": {
-                    "hs_note_body": note,
-                    "hs_timestamp": datetime.now(timezone.utc).isoformat(),
-                },
-                "associations": [{
-                    "to": {"id": contact_id},
-                    "types": [{"associationCategory": "HUBSPOT_DEFINED", "associationTypeId": 202}]
-                }]
-            }
-            requests.post(
-                "https://api.hubapi.com/crm/v3/objects/notes",
-                json=note_payload,
-                headers=headers,
-                timeout=10,
-            )
-
-        logger.info(f"HubSpot sync OK for {email} (contact_id={contact_id})")
     except Exception as e:
         logger.warning(f"HubSpot sync failed for {email}: {e}")
 
