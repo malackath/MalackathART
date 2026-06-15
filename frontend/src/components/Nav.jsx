@@ -75,13 +75,16 @@ export const Nav = () => {
             >
               🔒
             </button>
-            <div className="absolute right-0 top-full mt-1 hidden group-hover:flex flex-col z-50 min-w-[160px] border"
-              style={{ backgroundColor: "var(--app-bg)", borderColor: "var(--app-border)" }}>
-              <Link to="/admin"
-                className="px-4 py-2.5 text-xs tracking-[0.15em] uppercase hover:bg-white/5 transition-colors"
-                style={{ color: "var(--app-gold)" }}>
-                Panel admin
-              </Link>
+            {/* Invisible bridge to prevent gap */}
+            <div className="absolute right-0 top-full h-2 w-full" />
+            <div className="absolute right-0 top-full pt-2 hidden group-hover:flex flex-col z-50 min-w-[160px]">
+              <div className="border" style={{ backgroundColor: "var(--app-bg)", borderColor: "var(--app-border)" }}>
+                <Link to="/admin"
+                  className="block px-4 py-2.5 text-xs tracking-[0.15em] uppercase hover:bg-white/5 transition-colors"
+                  style={{ color: "var(--app-gold)" }}>
+                  Panel admin
+                </Link>
+              </div>
             </div>
           </div>
           <button
