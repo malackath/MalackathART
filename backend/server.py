@@ -784,6 +784,15 @@ async def get_messages(_: str = Depends(require_admin)):
     msgs = await db.contact_messages.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
     return msgs
 
+@api.put("/contact/messages/{message_id}/read")
+async def mark_message_read(message_id: str, _: str = Depends(require_admin)):
+    """Mark a contact message as read."""
+    await db.contact_messages.update_one(
+        {"id": message_id},
+        {"$set": {"read": True}}
+    )
+    return {"ok": True}
+
 # ---------------- Bulk series assignment ----------------
 class BulkSeriesUpdate(BaseModel):
     artwork_ids: List[str]

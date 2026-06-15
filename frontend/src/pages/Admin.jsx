@@ -200,11 +200,17 @@ export default function Admin() {
   const [availableSeries, setAvailableSeries] = useState([]);
   const [bulkSerie, setBulkSerie] = useState("");
   const [applyingBulk, setApplyingBulk] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const load = () => {
     api.get("/artworks").then((r) => setArtworks(r.data));
     api.get("/exhibitions").then((r) => setExhibitions(r.data));
     api.get("/settings").then((r) => setAvailableSeries(r.data?.series || []));
+    api.get("/contact/messages").then((r) => {
+      setMessages(r.data);
+      setUnreadCount(r.data.filter(m => !m.read).length);
+    }).catch(() => {});
   };
 
   useEffect(() => { if (user) load(); }, [user]);
@@ -350,6 +356,55 @@ export default function Admin() {
           <SettingsEditor />
         ) : tab === "artist" ? (
           <ArtistEditor />
+        ) : tab === "messages" ? (
+          <div className="space-y-4">
+            {messages.length === 0 ? (
+              <div className="py-16 text-center text-white/40 text-sm">No hay mensajes aún.</div>
+            ) : (
+              messages.map((m) => (
+                <div
+                  key={m.id}
+                  className={`border p-5 transition-colors ${m.read ? "border-white/10 bg-white/[0.02]" : "border-[#B8860B]/40 bg-[#B8860B]/5"}`}
+                >
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div>
+                      <div className="flex items-center gap-3">
+                        {!m.read && <span className="w-2 h-2 rounded-full bg-[#B8860B] flex-shrink-0" />}
+                        <span className="font-bold text-white">{m.name}</span>
+                        <span className="text-white/50 text-sm">{m.email}</span>
+                      </div>
+                      {m.subject && (
+                        <div className="text-xs tracking-[0.15em] uppercase text-[#B8860B] mt-1">{m.subject}</div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <span className="text-xs text-white/40">
+                        {new Date(m.created_at).toLocaleDateString("es-UY", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                      {!m.read && (
+                        <button
+                          onClick={async () => {
+                            await api.put(`/contact/messages/${m.id}/read`);
+                            load();
+                          }}
+                          className="text-xs text-white/40 hover:text-white border border-white/20 px-2 py-1 transition-colors"
+                        >
+                          Marcar leído
+                        </button>
+                      )}
+                      <a
+                        href={`mailto:${m.email}?subject=Re: ${m.subject || "Consulta"}`}
+                        className="text-xs bg-[#B8860B] text-black font-bold px-3 py-1 hover:bg-[#D4A017] transition-colors"
+                      >
+                        Responder
+                      </a>
+                    </div>
+                  </div>
+                  <p className="text-sm text-white/70 leading-relaxed whitespace-pre-wrap">{m.message}</p>
+                </div>
+              ))
+            )}
+          </div>
         ) : tab === "artworks" ? (
           <div>
             {/* Bulk series toolbar */}
@@ -436,6 +491,7 @@ export default function Admin() {
                   <td className="text-white/60">{a.technique}</td>
                   <td className="text-white/60">${a.price}</td>
                   <td>{a.available ? <span className="text-green-400">●</span> : <span className="text-white/30">sold</span>}</td>
+                  <td className="text-white/50 text-xs">{a.series || "—"}</td>
                   <td className="text-right">
                     <button onClick={() => startEdit(a)} className="p-2 text-white/60 hover:text-white"><Edit2 size={14} /></button>
                     <button onClick={() => remove(a.id)} className="p-2 text-white/60 hover:text-red-400"><Trash2 size={14} /></button>

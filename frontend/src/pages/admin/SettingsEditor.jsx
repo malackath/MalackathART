@@ -182,32 +182,40 @@ export default function SettingsEditor() {
         </p>
 
         {/* Lista de series — draggable */}
-        <div className="flex flex-col gap-2 mb-4">
+        <div className="flex flex-col gap-2 mb-4" id="series-list">
           {(settings.series || []).map((s, i) => (
             <div
-              key={i}
+              key={s + i}
               draggable
-              onDragStart={(e) => e.dataTransfer.setData("serieIdx", i)}
-              onDragOver={(e) => e.preventDefault()}
+              onDragStart={(e) => {
+                e.dataTransfer.setData("text/plain", String(i));
+                e.currentTarget.style.opacity = "0.4";
+              }}
+              onDragEnd={(e) => { e.currentTarget.style.opacity = "1"; }}
+              onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = "rgba(240,180,0,0.6)"; }}
+              onDragLeave={(e) => { e.currentTarget.style.borderColor = ""; }}
               onDrop={(e) => {
-                const from = parseInt(e.dataTransfer.getData("serieIdx"));
+                e.preventDefault();
+                e.currentTarget.style.borderColor = "";
+                const from = parseInt(e.dataTransfer.getData("text/plain"));
                 const to = i;
                 if (from === to) return;
                 const next = [...settings.series];
                 const [moved] = next.splice(from, 1);
                 next.splice(to, 0, moved);
-                setSettings({ ...settings, series: next });
+                setSettings((prev) => ({ ...prev, series: next }));
               }}
               className="flex items-center justify-between border border-white/10 px-4 py-2 cursor-grab hover:border-white/30 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <span className="text-white/20 select-none">⠿</span>
+                <span className="text-white/20 select-none text-lg">⠿</span>
                 <span className="text-sm text-white">{s}</span>
               </div>
               <button
+                type="button"
                 onClick={() => {
                   const next = settings.series.filter((_, j) => j !== i);
-                  setSettings({ ...settings, series: next });
+                  setSettings((prev) => ({ ...prev, series: next }));
                 }}
                 className="text-white/40 hover:text-red-400 transition-colors ml-4"
               >
