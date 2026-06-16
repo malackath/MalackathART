@@ -1255,6 +1255,11 @@ if _STATIC_DIR.exists() and (_STATIC_DIR / "static").exists():
 
 @app.get("/{full_path:path}")
 async def serve_frontend(full_path: str):
+    # Try to serve as a static file from the build root (favicon, images, etc.)
+    if full_path and full_path != "":
+        _file = _STATIC_DIR / full_path
+        if _file.exists() and _file.is_file():
+            return _FileResponse(str(_file))
     _index = _STATIC_DIR / "index.html"
     if _index.exists():
         return _FileResponse(str(_index))
