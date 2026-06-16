@@ -3,7 +3,7 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 import CatalogButton from "./CatalogButton";
-import { Menu, X, Sun, Moon } from "lucide-react";
+import { Menu, X, Sun, Moon, Instagram } from "lucide-react";
 
 export const Nav = () => {
   const { t, lang, toggle, siteName } = useLang();
@@ -56,6 +56,22 @@ export const Nav = () => {
           <div className="hidden sm:block">
             <CatalogButton compact />
           </div>
+
+          {/* Instagram link */}
+          <a
+            href="https://instagram.com/bernardoarnelli"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram"
+            className="p-1.5 md:p-2 transition-all hover:scale-105 border"
+            style={{
+              color: "var(--app-text-soft)",
+              borderColor: "var(--app-border-strong)",
+            }}
+          >
+            <Instagram size={14} />
+          </a>
+
           <button
             data-testid="theme-toggle"
             onClick={toggleTheme}
@@ -68,6 +84,7 @@ export const Nav = () => {
           >
             {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
           </button>
+
           <div className="relative group">
             <button
               className="text-xs tracking-[0.2em] uppercase transition-colors border px-2.5 py-1.5 md:px-3 flex items-center gap-1.5"
@@ -87,6 +104,7 @@ export const Nav = () => {
               </div>
             </div>
           </div>
+
           <button
             data-testid="lang-toggle"
             onClick={toggle}
@@ -98,6 +116,7 @@ export const Nav = () => {
           >
             {lang === "es" ? "EN" : "ES"}
           </button>
+
           <button
             data-testid="nav-mobile-toggle"
             className="md:hidden"
@@ -130,6 +149,15 @@ export const Nav = () => {
                 {l.label}
               </NavLink>
             ))}
+            <a
+              href="https://instagram.com/bernardoarnelli"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-base uppercase tracking-wide"
+              style={{ color: "var(--app-text-soft)" }}
+            >
+              <Instagram size={16} /> Instagram
+            </a>
             <div className="pt-4">
               <CatalogButton compact />
             </div>
