@@ -16,6 +16,7 @@ from PIL import Image, ImageOps
 import bcrypt
 import jwt
 import stripe  # official Stripe SDK
+import mercadopago  # MercadoPago SDK
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
@@ -30,6 +31,8 @@ JWT_EXP_HOURS = 24 * 7
 ADMIN_EMAIL = os.environ["ADMIN_EMAIL"]
 ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
 STRIPE_API_KEY = os.environ["STRIPE_API_KEY"]
+MP_ACCESS_TOKEN = os.environ.get("MP_ACCESS_TOKEN", "")
+MP_PUBLIC_KEY = os.environ.get("MP_PUBLIC_KEY", "")
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY")
 STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
 APP_NAME = "elena-cruz-gallery"
@@ -741,6 +744,97 @@ async def checkout_status(session_id: str, http_request: Request):
         "currency": tx.get("currency"),
         "artwork_id": tx.get("artwork_id"),
     }
+
+
+# ---------------- MercadoPago Checkout ----------------
+@api.post("/checkout/mp-session")
+async def create_mp_checkout(data: CheckoutCreate):
+    if not MP_ACCESS_TOKEN:
+        raise HTTPException(500, "MercadoPago no configurado")
+
+    artwork = await db.artworks.find_one({"id": data.artwork_id}, {"_id": 0})
+    if not artwork:
+        raise HTTPException(404, "Artwork not found")
+    if not artwork.get("available", True):
+        raise HTTPException(400, "Artwork not available")
+
+    amount = float(artwork["price"])
+    origin = data.origin_url.rstrip("/")
+
+    sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
+
+    preference_data = {
+        "items": [{
+            "title": artwork.get("title", "Obra de arte"),
+            "quantity": 1,
+            "unit_price": amount,
+            "currency_id": "USD",
+        }],
+        "back_urls": {
+            "success": f"{origin}/success",
+            "failure": f"{origin}/works/{data.artwork_id}",
+            "pending": f"{origin}/works/{data.artwork_id}",
+        },
+        "auto_return": "approved",
+        "external_reference": data.artwork_id,
+        "statement_descriptor": "ARNELLI ART",
+    }
+
+    if data.buyer_email:
+        preference_data["payer"] = {"email": data.buyer_email}
+
+    preference_response = sdk.preference().create(preference_data)
+    preference = preference_response["response"]
+
+    if "init_point" not in preference:
+        raise HTTPException(500, f"Error MercadoPago: {preference}")
+
+    tx = {
+        "session_id": preference.get("id"),
+        "artwork_id": data.artwork_id,
+        "amount": amount,
+        "currency": "usd",
+        "payment_status": "initiated",
+        "status": "open",
+        "provider": "mercadopago",
+        "buyer_email": data.buyer_email,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.payment_transactions.insert_one(tx)
+    return {"url": preference["init_point"], "preference_id": preference["id"]}
+
+
+@api.get("/checkout/mp-public-key")
+async def get_mp_public_key():
+    return {"public_key": MP_PUBLIC_KEY}
+
+
+@api.post("/webhook/mercadopago")
+async def mp_webhook(request: Request):
+    data = await request.json()
+    topic = data.get("type") or data.get("topic")
+    resource_id = data.get("data", {}).get("id") or data.get("id")
+
+    if topic == "payment" and resource_id:
+        try:
+            sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
+            payment_info = sdk.payment().get(resource_id)
+            payment = payment_info["response"]
+            status = payment.get("status")
+            artwork_id = payment.get("external_reference")
+
+            if status == "approved" and artwork_id:
+                await db.artworks.update_one(
+                    {"id": artwork_id}, {"$set": {"available": False}}
+                )
+                await db.payment_transactions.update_one(
+                    {"session_id": payment.get("preference_id")},
+                    {"$set": {"payment_status": "paid", "status": "complete"}}
+                )
+        except Exception as e:
+            logger.error(f"MP webhook error: {e}")
+
+    return {"ok": True}
 
 
 @api.post("/webhook/stripe")

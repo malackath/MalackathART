@@ -12,6 +12,7 @@ export default function WorkDetail() {
   const [art, setArt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(false);
+  const [buyingMP, setBuyingMP] = useState(false);
   const [activeImage, setActiveImage] = useState(null);
   const [allArtworks, setAllArtworks] = useState([]);
   const navigate = useNavigate();
@@ -47,6 +48,21 @@ export default function WorkDetail() {
     } catch (e) {
       toast.error(lang === "es" ? "Error iniciando el pago" : "Error starting payment");
       setBuying(false);
+    }
+  };
+
+  const handleBuyMP = async () => {
+    if (!art) return;
+    setBuyingMP(true);
+    try {
+      const res = await api.post("/checkout/mp-session", {
+        artwork_id: art.id,
+        origin_url: window.location.origin,
+      });
+      if (res.data.url) window.location.href = res.data.url;
+    } catch (e) {
+      toast.error(lang === "es" ? "Error iniciando el pago" : "Error starting payment");
+      setBuyingMP(false);
     }
   };
 
@@ -220,19 +236,55 @@ export default function WorkDetail() {
           </p>
 
           {art.available ? (
-            <Link
-              to={`/contact?obra=${encodeURIComponent(pick(art, "title"))}`}
-              data-testid="buy-artwork-button"
-              className="mt-10 w-full inline-flex items-center justify-center gap-3 px-7 py-4 text-sm tracking-[0.2em] uppercase font-bold transition-colors"
-              style={{
-                backgroundColor: "var(--app-invert)",
-                color: "var(--app-invert-text)",
-                border: "1px solid var(--app-invert)",
-              }}
-            >
-              {t.detail.buy}
-              <ArrowUpRight size={16} />
-            </Link>
+            <div className="mt-10 flex flex-col gap-3">
+              {/* MercadoPago — compra directa local */}
+              <button
+                onClick={handleBuyMP}
+                disabled={buyingMP}
+                data-testid="buy-mp-button"
+                className="w-full inline-flex items-center justify-center gap-3 px-7 py-4 text-sm tracking-[0.2em] uppercase font-bold transition-colors disabled:opacity-50"
+                style={{
+                  backgroundColor: "#009ee3",
+                  color: "#fff",
+                  border: "1px solid #009ee3",
+                }}
+              >
+                {buyingMP
+                  ? (lang === "es" ? "Redirigiendo..." : "Redirecting...")
+                  : (lang === "es" ? "Comprar con MercadoPago" : "Buy with MercadoPago")}
+                <ArrowUpRight size={16} />
+              </button>
+
+              {/* Stripe — compra internacional */}
+              <button
+                onClick={handleBuy}
+                disabled={buying}
+                data-testid="buy-artwork-button"
+                className="w-full inline-flex items-center justify-center gap-3 px-7 py-4 text-sm tracking-[0.2em] uppercase font-bold transition-colors disabled:opacity-50"
+                style={{
+                  backgroundColor: "var(--app-invert)",
+                  color: "var(--app-invert-text)",
+                  border: "1px solid var(--app-invert)",
+                }}
+              >
+                {buying
+                  ? (lang === "es" ? "Redirigiendo..." : "Redirecting...")
+                  : (lang === "es" ? "Comprar con tarjeta" : "Buy with card")}
+                <ArrowUpRight size={16} />
+              </button>
+
+              {/* Consultar */}
+              <Link
+                to={`/contact?obra=${encodeURIComponent(pick(art, "title"))}`}
+                className="w-full inline-flex items-center justify-center gap-3 px-7 py-4 text-sm tracking-[0.2em] uppercase font-medium transition-colors"
+                style={{
+                  color: "var(--app-text-soft)",
+                  border: "1px solid var(--app-border-strong)",
+                }}
+              >
+                {lang === "es" ? "Consultar por esta obra" : "Inquire about this work"}
+              </Link>
+            </div>
           ) : (
             <div
               data-testid="sold-banner"
