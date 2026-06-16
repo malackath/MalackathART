@@ -3,7 +3,7 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 import CatalogButton from "./CatalogButton";
-import { Menu, X, Sun, Moon, Instagram } from "lucide-react";
+import { Menu, X, Sun, Moon } from "lucide-react";
 
 export const Nav = () => {
   const { t, lang, toggle, siteName } = useLang();
@@ -53,24 +53,25 @@ export const Nav = () => {
         </nav>
 
         <div className="flex items-center gap-2 md:gap-3">
-          <div className="hidden sm:block">
-            <CatalogButton compact />
-          </div>
 
-          {/* Instagram link */}
+          {/* Instagram logo — before catalog */}
           <a
             href="https://instagram.com/bernardoarnelli"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Instagram"
-            className="p-1.5 md:p-2 transition-all hover:scale-105 border"
-            style={{
-              color: "var(--app-text-soft)",
-              borderColor: "var(--app-border-strong)",
-            }}
+            className="transition-all hover:scale-110 hover:opacity-90"
           >
-            <Instagram size={14} />
+            <img
+              src="/insta.png"
+              alt="Instagram"
+              className="w-7 h-7 md:w-8 md:h-8 rounded-xl object-cover"
+            />
           </a>
+
+          <div className="hidden sm:block">
+            <CatalogButton compact />
+          </div>
 
           <button
             data-testid="theme-toggle"
@@ -92,7 +93,6 @@ export const Nav = () => {
             >
               🔒
             </button>
-            {/* Invisible bridge to prevent gap */}
             <div className="absolute right-0 top-full h-2 w-full" />
             <div className="absolute right-0 top-full pt-2 hidden group-hover:flex flex-col z-50 min-w-[160px]">
               <div className="border" style={{ backgroundColor: "var(--app-bg)", borderColor: "var(--app-border)" }}>
@@ -153,10 +153,11 @@ export const Nav = () => {
               href="https://instagram.com/bernardoarnelli"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-base uppercase tracking-wide"
+              className="flex items-center gap-3 text-base uppercase tracking-wide"
               style={{ color: "var(--app-text-soft)" }}
             >
-              <Instagram size={16} /> Instagram
+              <img src="/insta.png" alt="Instagram" className="w-5 h-5 rounded-md object-cover" />
+              Instagram
             </a>
             <div className="pt-4">
               <CatalogButton compact />
