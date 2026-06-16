@@ -65,7 +65,7 @@ export const Nav = () => {
             <img
               src="/insta.png"
               alt="Instagram"
-              className="w-7 h-7 md:w-8 md:h-8 rounded-xl object-cover"
+              className="w-6 h-6 md:w-7 md:h-7 object-contain"
             />
           </a>
 
