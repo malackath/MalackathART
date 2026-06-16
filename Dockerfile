@@ -21,7 +21,8 @@ RUN pip install --no-cache-dir \
     pillow>=10.3.0 \
     python-jose>=3.3.0 \
     cryptography>=42.0.8 \
-    stripe>=7.0.0
+    stripe>=7.0.0 \
+    mercadopago>=2.2.0
 
 COPY backend/server.py .
 
