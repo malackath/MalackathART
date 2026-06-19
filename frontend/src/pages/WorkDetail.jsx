@@ -67,7 +67,11 @@ export default function WorkDetail() {
   };
 
   if (loading) {
-    return (
+    const seoTitle = art ? pick(art, "title") : "Obra";
+  const seoDesc = art ? `${pick(art, "title")} (${art.year}). ${pick(art, "technique") || ""}. ${pick(art, "description") || ""}`.slice(0, 160) : "";
+  const seoImg = art?.image_url || "";
+
+  return (
       <div
         data-testid="detail-loading"
         className="max-w-[1400px] mx-auto px-6 md:px-12 py-32"
@@ -89,10 +93,6 @@ export default function WorkDetail() {
     );
   }
 
-  const seoTitle = pick(art, "title");
-  const seoDesc = `${pick(art, "title")} (${art.year}). ${pick(art, "technique") || ""}. Bernardo Arnelli — Arte contemporáneo uruguayo.`.slice(0, 160);
-  const seoImg = art.image_url || "";
-
   const formatPrice = (price, currency) => {
     return new Intl.NumberFormat(lang === "es" ? "es-ES" : "en-US", {
       style: "currency",
@@ -103,13 +103,6 @@ export default function WorkDetail() {
 
   return (
     <div data-testid="detail-page" className="max-w-[1400px] mx-auto px-6 md:px-12 py-12 md:py-20">
-      <SEO
-        title={seoTitle}
-        description={seoDesc}
-        image={seoImg}
-        url={`/works/${art.id}`}
-        type="article"
-      />
       <div className="flex flex-col gap-4 mb-12">
         {/* Fila 1: Volver */}
         <button
@@ -259,24 +252,6 @@ export default function WorkDetail() {
                 {buyingMP
                   ? (lang === "es" ? "Redirigiendo..." : "Redirecting...")
                   : (lang === "es" ? "Comprar con MercadoPago" : "Buy with MercadoPago")}
-                <ArrowUpRight size={16} />
-              </button>
-
-              {/* Stripe — compra internacional */}
-              <button
-                onClick={handleBuy}
-                disabled={buying}
-                data-testid="buy-artwork-button"
-                className="w-full inline-flex items-center justify-center gap-3 px-7 py-4 text-sm tracking-[0.2em] uppercase font-bold transition-colors disabled:opacity-50"
-                style={{
-                  backgroundColor: "var(--app-invert)",
-                  color: "var(--app-invert-text)",
-                  border: "1px solid var(--app-invert)",
-                }}
-              >
-                {buying
-                  ? (lang === "es" ? "Redirigiendo..." : "Redirecting...")
-                  : (lang === "es" ? "Comprar con tarjeta" : "Buy with card")}
                 <ArrowUpRight size={16} />
               </button>
 
