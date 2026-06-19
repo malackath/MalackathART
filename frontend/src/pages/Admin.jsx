@@ -347,6 +347,32 @@ export default function Admin() {
     }
   };
 
+  // Drag and drop reordering for exhibitions
+  const handleDropExhibitions = async () => {
+    if (dragIdx === null || hoverIdx === null || dragIdx === hoverIdx) {
+      setDragIdx(null);
+      setHoverIdx(null);
+      return;
+    }
+    const next = [...exhibitions];
+    const [moved] = next.splice(dragIdx, 1);
+    next.splice(hoverIdx, 0, moved);
+    const reordered = next.map((e, i) => ({ ...e, order: i }));
+    setExhibitions(reordered);
+    setDragIdx(null);
+    setHoverIdx(null);
+    try {
+      await api.put(
+        "/exhibitions/reorder",
+        reordered.map((e) => ({ id: e.id, order: e.order }))
+      );
+      toast.success("Orden actualizado");
+    } catch (e) {
+      toast.error("Error reordenando");
+      load();
+    }
+  };
+
   return (
     <div data-testid="admin-page" className="min-h-screen bg-[#050505] text-white">
       <header className="border-b border-white/10 px-8 py-5 flex items-center justify-between">
@@ -632,6 +658,7 @@ export default function Admin() {
           <table className="w-full text-sm">
             <thead className="text-left text-xs tracking-[0.2em] uppercase text-white/40 border-b border-white/10">
               <tr>
+                <th className="py-3 w-6"></th>
                 <th className="py-3">Title</th>
                 <th>Venue</th>
                 <th>City</th>
@@ -641,8 +668,18 @@ export default function Admin() {
               </tr>
             </thead>
             <tbody>
-              {exhibitions.map((e) => (
-                <tr key={e.id} data-testid={`admin-exh-${e.id}`} className="border-b border-white/5">
+              {exhibitions.map((e, i) => (
+                <tr
+                  key={e.id}
+                  data-testid={`admin-exh-${e.id}`}
+                  className={`border-b border-white/5 cursor-grab transition-colors ${dragIdx === i ? "opacity-40" : ""} ${hoverIdx === i ? "bg-white/5" : ""}`}
+                  draggable
+                  onDragStart={() => setDragIdx(i)}
+                  onDragEnter={() => setHoverIdx(i)}
+                  onDragEnd={handleDropExhibitions}
+                  onDragOver={(e) => e.preventDefault()}
+                >
+                  <td className="py-3 pr-2 text-white/20 select-none">⠿</td>
                   <td className="py-3">{e.title}</td>
                   <td className="text-white/60">{e.venue}</td>
                   <td className="text-white/60">{e.city}</td>
