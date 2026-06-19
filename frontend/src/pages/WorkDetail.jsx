@@ -67,11 +67,7 @@ export default function WorkDetail() {
   };
 
   if (loading) {
-    const seoTitle = art ? pick(art, "title") : "Obra";
-  const seoDesc = art ? `${pick(art, "title")} (${art.year}). ${pick(art, "technique") || ""}. ${pick(art, "description") || ""}`.slice(0, 160) : "";
-  const seoImg = art?.image_url || "";
-
-  return (
+    return (
       <div
         data-testid="detail-loading"
         className="max-w-[1400px] mx-auto px-6 md:px-12 py-32"
@@ -93,6 +89,10 @@ export default function WorkDetail() {
     );
   }
 
+  const seoTitle = pick(art, "title");
+  const seoDesc = `${pick(art, "title")} (${art.year}). ${pick(art, "technique") || ""}. Bernardo Arnelli — Arte contemporáneo uruguayo.`.slice(0, 160);
+  const seoImg = art.image_url || "";
+
   const formatPrice = (price, currency) => {
     return new Intl.NumberFormat(lang === "es" ? "es-ES" : "en-US", {
       style: "currency",
@@ -103,6 +103,13 @@ export default function WorkDetail() {
 
   return (
     <div data-testid="detail-page" className="max-w-[1400px] mx-auto px-6 md:px-12 py-12 md:py-20">
+      <SEO
+        title={seoTitle}
+        description={seoDesc}
+        image={seoImg}
+        url={`/works/${art.id}`}
+        type="article"
+      />
       <div className="flex flex-col gap-4 mb-12">
         {/* Fila 1: Volver */}
         <button
