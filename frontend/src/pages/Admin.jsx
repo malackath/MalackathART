@@ -1,3 +1,4 @@
+// Admin.jsx — drag & drop exposiciones
 import React, { useEffect, useState, useRef } from "react";
 import RichTextEditor from "../components/RichTextEditor";
 import { Navigate, Link } from "react-router-dom";
